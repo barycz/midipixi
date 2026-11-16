@@ -47,9 +47,10 @@ keeps working if the plugin window closes or the DAW's audio stutters.
 | Preset format | JSON, same bytes on PC, over the wire and in flash | Human readable, diffable, versioned (`"format": "midipixi/1"`). |
 | JSON on MCU | Own small non-allocating parser/writer in core | Parsed only at load time into a fixed-size struct; the render loop never touches JSON. Number parsing/formatting is locale independent (a DAW may set a locale with decimal commas). |
 | Gear protocol | Newline-delimited JSON over CDC serial | Debuggable with any serial terminal; USB already guarantees integrity. See [PROTOCOL.md](PROTOCOL.md). |
+| Host tools in the build | None besides compiler + Python | The PIO program is assembled at runtime with SDK encoders and the UF2 is produced by `scripts/bin2uf2.py`, so locked-down Windows machines (Smart App Control) can build the firmware. |
 | Strip-independent presets | Positions and widths normalized to 0..1 | A preset looks the same on 60 or 600 LEDs. LED count, color order, gamma, power budget live in the separate gear config. |
 | 2D panels | Not in v1 | 1D strips only. |
-| USB VID/PID | `1209:0001` (pid.codes test PID) for development | Must be replaced before public release: request a free PID from Raspberry Pi (github.com/raspberrypi/usb-pid) or pid.codes. Defined in one place: `gear/src/usb_ids.h` and `host/include/midipixi/host/usb_ids.h`. |
+| USB VID/PID | `1209:0001` (pid.codes test PID) for development | Must be replaced before public release: request a free PID from Raspberry Pi (github.com/raspberrypi/usb-pid) or pid.codes. Defined in one place: `core/include/midipixi/usb_ids.h`. |
 
 ## Effect model (the synth analogy)
 

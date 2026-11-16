@@ -36,6 +36,7 @@
       "cacheVariables": {
         "MIDIPIXI_GEAR": "ON",
         "PICO_BOARD": "pico2",
+        "PICO_NO_PICOTOOL": "ON",
         "CMAKE_BUILD_TYPE": "Release"
       }
     },

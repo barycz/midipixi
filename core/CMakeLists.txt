@@ -5,6 +5,7 @@ add_library(midipixi_core STATIC
     src/preset_json.cpp
     src/output.cpp
     src/engine.cpp
+    src/protocol.cpp
 )
 
 target_include_directories(midipixi_core PUBLIC include)
