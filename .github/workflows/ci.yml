@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - run: cmake --preset core-only
+      - run: cmake --build --preset core-only
+      - run: ctest --preset core-only
+
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: cmake --preset desktop
+      - run: cmake --build --preset desktop
+      - run: ctest --preset desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: midipixi-vst3-windows
+          path: build/desktop/vst/MidipixiVST_artefacts/**/VST3/**
+
+  gear:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board: [pico2, pico]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - run: git clone --depth 1 -b 2.1.1 https://github.com/raspberrypi/pico-sdk.git $HOME/pico-sdk && git -C $HOME/pico-sdk submodule update --init --depth 1 lib/tinyusb
+      - run: cmake --preset ${{ matrix.board }} -DPICO_SDK_PATH=$HOME/pico-sdk
+      - run: cmake --build --preset ${{ matrix.board }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: midipixi-gear-${{ matrix.board }}
+          path: build/${{ matrix.board }}/gear/*.uf2

@@ -1,0 +1,63 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "desktop",
+      "displayName": "Desktop (core, tools, tests, VST) - release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/desktop",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "desktop-debug",
+      "displayName": "Desktop - debug",
+      "inherits": "desktop",
+      "binaryDir": "${sourceDir}/build/desktop-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "core-only",
+      "displayName": "Core + tests + CLI only (no JUCE download)",
+      "inherits": "desktop",
+      "binaryDir": "${sourceDir}/build/core-only",
+      "cacheVariables": {
+        "MIDIPIXI_BUILD_VST": "OFF"
+      }
+    },
+    {
+      "name": "pico2",
+      "displayName": "Gear firmware - Raspberry Pi Pico 2 (RP2350)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/pico2",
+      "cacheVariables": {
+        "MIDIPIXI_GEAR": "ON",
+        "PICO_BOARD": "pico2",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "pico",
+      "displayName": "Gear firmware - Raspberry Pi Pico (RP2040, soft float)",
+      "inherits": "pico2",
+      "binaryDir": "${sourceDir}/build/pico",
+      "cacheVariables": {
+        "PICO_BOARD": "pico"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "desktop", "configurePreset": "desktop" },
+    { "name": "desktop-debug", "configurePreset": "desktop-debug" },
+    { "name": "core-only", "configurePreset": "core-only" },
+    { "name": "pico2", "configurePreset": "pico2" },
+    { "name": "pico", "configurePreset": "pico" }
+  ],
+  "testPresets": [
+    { "name": "desktop", "configurePreset": "desktop", "output": { "outputOnFailure": true } },
+    { "name": "core-only", "configurePreset": "core-only", "output": { "outputOnFailure": true } }
+  ]
+}
