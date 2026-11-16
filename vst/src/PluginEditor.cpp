@@ -2,7 +2,7 @@
 
 namespace {
 constexpr int kWidth = 1240;
-constexpr int kHeight = 820;
+constexpr int kHeight = 860;
 }  // namespace
 
 MidipixiEditor::MidipixiEditor(MidipixiProcessor& p)
@@ -10,8 +10,31 @@ MidipixiEditor::MidipixiEditor(MidipixiProcessor& p)
     setLookAndFeel(&lnf_);
     frame_ = std::make_unique<FrameSnapshot>();
 
+    // Layer editor whose destination knobs are modulation targets.
     layerEditor_ = std::make_unique<LayerEditor>(p);
-    addAndMakeVisible(*layerEditor_);
+    layerEditor_->setKnobFactory([this](const juce::String& name, double min, double max, double def,
+                                        ParamKnob::Getter g, ParamKnob::Setter s, ParamKnob::Formatter f, double skew,
+                                        std::optional<mpx::Dest> dest) -> std::unique_ptr<ParamKnob> {
+        if (!dest)
+            return std::make_unique<ParamKnob>(name, min, max, def, std::move(g), std::move(s), std::move(f), skew);
+        ModKnob::Context ctx;
+        ctx.layer = [this] { return currentLayer(); };
+        ctx.modsChanged = [this] {
+            proc_.presetEdited();
+            matrix_->refresh();
+            modulationChanged();
+        };
+        return std::make_unique<ModKnob>(name, min, max, def, std::move(g), std::move(s), std::move(f), skew, *dest,
+                                         std::move(ctx));
+    });
+    matrix_ = std::make_unique<ModMatrixView>(p);
+    matrix_->onChanged = [this] { modulationChanged(); };
+
+    tabs_.setTabBarDepth(26);
+    tabs_.setOutline(0);
+    tabs_.addTab("Layer", theme::panel, layerEditor_.get(), false);
+    tabs_.addTab("Mod matrix", theme::panel, matrix_.get(), false);
+    addAndMakeVisible(tabs_);
 
     presetName_.setInputRestrictions(mpx::kNameLen - 1);
     presetName_.setTooltip("Preset name");
@@ -56,9 +79,10 @@ MidipixiEditor::MidipixiEditor(MidipixiProcessor& p)
     addAndMakeVisible(layers_);
     addAndMakeVisible(gearPanel_);
 
-    layers_.onSelect = [this](int i) { layerEditor_->setLayer(i); };
-    layers_.onStructureChanged = [this] { layerEditor_->refresh(); };
+    layers_.onSelect = [this](int i) { selectLayer(i); };
+    layers_.onStructureChanged = [this] { selectLayer(layers_.selected()); };
 
+    buildSources();
     buildMacros();
     proc_.presetReplaced.addChangeListener(this);
     refreshAll();
@@ -69,14 +93,36 @@ MidipixiEditor::MidipixiEditor(MidipixiProcessor& p)
 
 MidipixiEditor::~MidipixiEditor() {
     proc_.presetReplaced.removeChangeListener(this);
+    tabs_.clearTabs();
     setLookAndFeel(nullptr);
+}
+
+mpx::Layer* MidipixiEditor::currentLayer() {
+    auto& pr = proc_.preset();
+    int i = layers_.selected();
+    return i >= 0 && i < pr.layerCount ? &pr.layers[i] : nullptr;
+}
+
+void MidipixiEditor::buildSources() {
+    using S = mpx::SourceType;
+    for (S t : {S::Env1, S::Env2, S::Lfo1, S::Lfo2, S::Lfo3, S::Note, S::Velocity, S::Aftertouch, S::Gate, S::Random,
+                S::PitchBend, S::Pressure, S::Beat}) {
+        auto chip = std::make_unique<ModSourceChip>(mpx::ModSource{t, 0});
+        chip->setTooltip("Drag onto a knob to modulate it");
+        addAndMakeVisible(*chip);
+        sourceChips_.push_back(std::move(chip));
+    }
+    auto cc = std::make_unique<ModSourceChip>(mpx::ModSource{S::CC, 1});
+    addAndMakeVisible(*cc);
+    sourceChips_.push_back(std::move(cc));
 }
 
 void MidipixiEditor::buildMacros() {
     macroKnobs_.clear();
+    macroChips_.clear();
     for (int m = 0; m < mpx::kNumMacros; ++m) {
         auto k = std::make_unique<ParamKnob>(
-            "Macro " + juce::String(m + 1), 0.0, 1.0, 0.0, [this, m] { return proc_.preset().macros[m].value; },
+            "", 0.0, 1.0, 0.0, [this, m] { return proc_.preset().macros[m].value; },
             [this, m](float v) {
                 proc_.preset().macros[m].value = v;
                 proc_.presetEdited();
@@ -84,23 +130,37 @@ void MidipixiEditor::buildMacros() {
             fmt::percent);
         addAndMakeVisible(*k);
         macroKnobs_.push_back(std::move(k));
+        auto chip = std::make_unique<ModSourceChip>(mpx::ModSource{mpx::SourceType::Macro, static_cast<uint8_t>(m)});
+        addAndMakeVisible(*chip);
+        macroChips_.push_back(std::move(chip));
     }
 }
 
 void MidipixiEditor::changeListenerCallback(juce::ChangeBroadcaster*) { refreshAll(); }
 
+void MidipixiEditor::selectLayer(int index) {
+    layers_.setSelected(index);
+    layerEditor_->setLayer(layers_.selected());
+    matrix_->setLayer(layers_.selected());
+}
+
+void MidipixiEditor::modulationChanged() {
+    layerEditor_->repaint();
+    layers_.repaint();
+}
+
 void MidipixiEditor::refreshAll() {
     updating_ = true;
     presetName_.setText(juce::String::fromUTF8(proc_.preset().name), false);
     updating_ = false;
-    layers_.setSelected(layers_.selected());
-    layerEditor_->setLayer(layers_.selected());
+    selectLayer(layers_.selected());
     for (int m = 0; m < static_cast<int>(macroKnobs_.size()); ++m) {
         const auto& macro = proc_.preset().macros[m];
+        auto tip = juce::String::fromUTF8(macro.name) +
+                   (macro.cc <= 127 ? " - follows MIDI CC " + juce::String(macro.cc) : juce::String(" - no CC"));
         macroKnobs_[static_cast<size_t>(m)]->refresh();
-        macroKnobs_[static_cast<size_t>(m)]->slider().setTooltip(
-            juce::String::fromUTF8(macro.name) +
-            (macro.cc <= 127 ? " - controlled by CC " + juce::String(macro.cc) : juce::String(" - no CC")));
+        macroKnobs_[static_cast<size_t>(m)]->slider().setTooltip(tip);
+        macroChips_[static_cast<size_t>(m)]->setTooltip(tip + ". Drag onto a knob to modulate it.");
     }
     repaint();
 }
@@ -154,6 +214,7 @@ void MidipixiEditor::paint(juce::Graphics& g) {
     g.setColour(theme::accent);
     g.setFont(juce::Font(juce::FontOptions(24.0f, juce::Font::bold)));
     g.drawText("midipixi", header.removeFromLeft(120), juce::Justification::centredLeft);
+    theme::drawSection(g, sourceArea_, "Modulation sources - drag onto a knob");
     theme::drawSection(g, macroArea_, "Macros");
 }
 
@@ -175,11 +236,11 @@ void MidipixiEditor::resized() {
     ledLabel_.setBounds(header.removeFromRight(40));
 
     r.reduce(10, 0);
-    strip_.setBounds(r.removeFromTop(150));
+    strip_.setBounds(r.removeFromTop(140));
     r.removeFromTop(8);
-    auto bottom = r.removeFromBottom(96);
+    auto bottom = r.removeFromBottom(118);
     r.removeFromBottom(8);
-    macroArea_ = bottom;
+    r.removeFromBottom(0);
 
     auto left = r.removeFromLeft(210);
     layers_.setBounds(left);
@@ -187,9 +248,29 @@ void MidipixiEditor::resized() {
     auto right = r.removeFromRight(240);
     gearPanel_.setBounds(right.removeFromTop(290));
     r.removeFromRight(8);
-    layerEditor_->setBounds(r);
+    tabs_.setBounds(r);
 
-    auto m = macroArea_.reduced(8, 6).withTrimmedTop(16);
-    int w = m.getWidth() / mpx::kNumMacros;
-    for (auto& k : macroKnobs_) k->setBounds(m.removeFromLeft(w).withSizeKeepingCentre(juce::jmin(w, 90), m.getHeight()));
+    // Bottom: sources (left) and macros (right)
+    sourceArea_ = bottom.removeFromLeft(bottom.getWidth() * 4 / 10);
+    bottom.removeFromLeft(8);
+    macroArea_ = bottom;
+    {
+        auto c = sourceArea_.reduced(8, 6).withTrimmedTop(20);
+        const int cols = 7;
+        int cw = c.getWidth() / cols;
+        int ch = juce::jmin(30, c.getHeight() / 2);
+        for (size_t i = 0; i < sourceChips_.size(); ++i) {
+            int col = static_cast<int>(i) % cols, row = static_cast<int>(i) / cols;
+            sourceChips_[i]->setBounds(c.getX() + col * cw + 2, c.getY() + row * (ch + 6) + 2, cw - 4, ch);
+        }
+    }
+    {
+        auto c = macroArea_.reduced(8, 6).withTrimmedTop(18);
+        int w = c.getWidth() / mpx::kNumMacros;
+        for (int m = 0; m < mpx::kNumMacros; ++m) {
+            auto col = c.removeFromLeft(w).reduced(3, 0);
+            macroChips_[static_cast<size_t>(m)]->setBounds(col.removeFromTop(20).withSizeKeepingCentre(juce::jmin(46, col.getWidth()), 20));
+            macroKnobs_[static_cast<size_t>(m)]->setBounds(col);
+        }
+    }
 }

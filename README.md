@@ -43,6 +43,41 @@ scripts\dev.cmd ctest --preset desktop
 | `pico2` | gear firmware for Pico 2 → `build/pico2/gear/midipixi_gear.uf2` |
 | `pico` | gear firmware for Pico 1 (RP2040) |
 
+## Using the VST
+
+Load **midipixi** as an instrument on a MIDI track. It makes no sound: the
+window shows the LED strip simulator, which follows the track's MIDI.
+
+- **Layers** (left): the stack of effects. The top of the list renders last.
+  The checkbox mutes a layer.
+- **Layer tab**: trigger mode and key zone, blend mode, emitter (the light
+  shape), two envelopes and three LFOs.
+- **Modulation**: drag a chip from *Modulation sources* (or a macro's `M1`…`M8`
+  chip) onto any knob. A coloured ring shows the modulation range, and a white
+  dot shows the live value. The small dots under a knob are the modulation
+  amounts: drag them up/down, double-click to remove, right-click for options.
+  The *Mod matrix* tab lists every row.
+- **Macros** follow MIDI CC 20–27, so DAW automation reaches the gear too.
+- **Gear** (right): connect, upload the preset to a slot, run a slot, or turn on
+  *Live edit* to stream every change to the hardware.
+
+## Command line
+
+```bat
+mpx-cli render presets\laser.json --demo set -o laser.png   :: waterfall image, no hardware needed
+mpx-cli upload 6 my-preset.json --select
+mpx-cli info
+```
+
+## Status
+
+| Part | State |
+|---|---|
+| core engine, preset format, protocol | complete. Unit tests in `core/tests` (run in CI) |
+| gear firmware | builds for Pico 2 and Pico 1. Not yet tested on hardware |
+| VST3 / standalone | builds on Windows. Not yet tested in a DAW |
+| macOS / Linux plugin builds, AU, CLAP, 2D panels | later |
+
 ## License
 
 AGPL-3.0-or-later. See [LICENSE](LICENSE).

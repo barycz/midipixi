@@ -86,6 +86,8 @@ target_sources(MidipixiVST PRIVATE
     src/ui/LayerList.cpp
     src/ui/LayerEditor.cpp
     src/ui/GearPanel.cpp
+    src/ui/ModKnob.cpp
+    src/ui/ModMatrixView.cpp
 )
 
 target_include_directories(MidipixiVST PRIVATE
