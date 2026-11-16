@@ -126,7 +126,7 @@ void Engine::startVoice(int layerIndex, Voice& v, int channel, int note, float v
     }
     for (int k = 0; k < kNumLfos; ++k) {
         v.lfoRate[k] = baseLfoRate(l.lfo[k]);
-        if (l.lfo[k].retrigger) {
+        if (isPerVoice(l.lfo[k])) {
             v.lfo[k].phase = wrap01(l.lfo[k].phase);
             v.lfo[k].randA = randomUnit() * 2.0f - 1.0f;
             v.lfo[k].randB = randomUnit() * 2.0f - 1.0f;
@@ -397,6 +397,13 @@ float Engine::lfoOutput(LfoState& st, const LfoParams& p) const {
 }
 
 void Engine::advanceLfo(LfoState& st, const LfoParams& p, float rate, float dt, bool lockToBeat) {
+    if (p.oneShot) {
+        // Single cycle: run up to the end of the waveform (phase 1) and hold there.
+        st.phase = st.phase + rate * dt;
+        if (st.phase > 1.0f) st.phase = 1.0f;
+        st.value = lfoOutput(st, p);
+        return;
+    }
     float newPhase;
     if (lockToBeat) {
         float beats = p.beats > 0.0001f ? p.beats : 0.0001f;
@@ -475,13 +482,13 @@ void Engine::advance(float dt) {
         LayerState& ls = layers_[li];
         for (int k2 = 0; k2 < kNumLfos; ++k2) {
             const LfoParams& p = l.lfo[k2];
-            if (!p.retrigger) advanceLfo(ls.freeLfo[k2], p, ls.freeRate[k2], dt, p.sync && playing_);
+            if (!isPerVoice(p)) advanceLfo(ls.freeLfo[k2], p, ls.freeRate[k2], dt, p.sync && playing_);
         }
         for (Voice& v : ls.voices) {
             if (!v.active) continue;
             for (int e = 0; e < kNumEnvs; ++e) advanceEnv(v.env[e], v.envEff[e], dt);
             for (int k2 = 0; k2 < kNumLfos; ++k2)
-                if (l.lfo[k2].retrigger) advanceLfo(v.lfo[k2], l.lfo[k2], v.lfoRate[k2], dt, false);
+                if (isPerVoice(l.lfo[k2])) advanceLfo(v.lfo[k2], l.lfo[k2], v.lfoRate[k2], dt, false);
             if (!v.gate && v.env[0].stage == EnvState::Idle) v.active = false;
         }
         ensureDrone(li);
@@ -508,7 +515,7 @@ float Engine::sourceValue(const Layer& l, const LayerState& ls, const Voice* v, 
         case SourceType::Lfo2:
         case SourceType::Lfo3: {
             int k = static_cast<int>(s.type) - static_cast<int>(SourceType::Lfo1);
-            if (!l.lfo[k].retrigger) return ls.freeLfo[k].value;
+            if (!isPerVoice(l.lfo[k])) return ls.freeLfo[k].value;
             return v ? v->lfo[k].value : 0.0f;
         }
         case SourceType::Macro: return s.index < kNumMacros ? macros_[s.index].current : 0.0f;

@@ -102,9 +102,13 @@ struct LfoParams {
     bool sync = false;       // tempo sync: one cycle = `beats` beats
     float beats = 1.0f;
     bool retrigger = false;  // restart phase on each note (else free running, shared by all voices)
+    bool oneShot = false;    // run a single cycle from `phase` to the end, then hold (per voice, implies retrigger)
     float phase = 0.0f;      // start phase, turns
     bool bipolar = true;     // -1..1 or 0..1
 };
+
+// True when the LFO runs per voice (restarted by each note) rather than layer-wide.
+inline bool isPerVoice(const LfoParams& p) { return p.retrigger || p.oneShot; }
 
 struct EmitterParams {
     float position = 0.5f;    // 0..1 along the strip

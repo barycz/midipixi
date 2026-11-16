@@ -21,4 +21,5 @@ set(MPX_FACTORY_PRESETS
     ambience
     rainbow-chase
     live-set
+    stargate
 )

@@ -79,6 +79,7 @@ sources, destinations, …) are errors.
 | `sync` | false | Tempo sync: one cycle lasts `beats` beats. Free-running synced LFOs lock to the song position while the transport plays. |
 | `beats` | 1 | Cycle length in beats |
 | `retrigger` | false | true: restart at `phase` on each note (per-voice). false: free running, shared by all voices. |
+| `oneShot` | false | true: on each note run a single cycle from `phase` to the end of the waveform, then hold the end value (per voice, implies `retrigger`). Use it for sweeps, e.g. a `sawup` one-shot on `position` moves an emitter across the strip once. |
 | `phase` | 0 | Start phase (turns) |
 | `bipolar` | true | Output −1..1, or 0..1 when false |
 

@@ -49,12 +49,13 @@ void LedStripView::paint(juce::Graphics& g) {
     for (int i = 0; i < n; ++i) {
         const mpx::Rgb& p = pixels_[static_cast<size_t>(i)];
         float cx = stripArea.getX() + pitch * (static_cast<float>(i) + 0.5f);
-        g.setColour(juce::Colour(0xff23262d));
-        g.fillEllipse(cx - dot / 2, cy - dot / 2, dot, dot);
-        if (mpx::maxChannel(p) > 0.0f) {
-            g.setColour(colourOf(p));
-            g.fillEllipse(cx - dot / 2, cy - dot / 2, dot, dot);
-        }
+        // An unlit LED is black, so dim values fade smoothly into it; the
+        // outline shows where the LEDs are.
+        juce::Rectangle<float> led(cx - dot / 2, cy - dot / 2, dot, dot);
+        g.setColour(mpx::maxChannel(p) > 0.0f ? colourOf(p) : juce::Colours::black);
+        g.fillEllipse(led);
+        g.setColour(juce::Colour(0xff3a3f49));
+        g.drawEllipse(led.reduced(0.5f), 1.0f);
     }
 
     // Waterfall: newest row at the top

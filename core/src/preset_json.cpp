@@ -68,6 +68,7 @@ void writeLayer(const Layer& l, JsonWriter& w) {
         w.field("sync", o.sync);
         w.field("beats", o.beats);
         w.field("retrigger", o.retrigger);
+        if (o.oneShot) w.field("oneShot", true);
         w.field("phase", o.phase);
         w.field("bipolar", o.bipolar);
         w.endObject();
@@ -165,6 +166,7 @@ bool readLayer(const JsonDoc& d, int obj, Layer& l, char* err, size_t errCap) {
         o.sync = d.getBool(ln, "sync", o.sync);
         o.beats = num(d, ln, "beats", o.beats);
         o.retrigger = d.getBool(ln, "retrigger", o.retrigger);
+        o.oneShot = d.getBool(ln, "oneShot", o.oneShot);
         o.phase = num(d, ln, "phase", o.phase);
         o.bipolar = d.getBool(ln, "bipolar", o.bipolar);
     }

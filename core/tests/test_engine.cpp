@@ -30,6 +30,8 @@ void run(Engine& e, float seconds, float step = 1.0f / 120.0f) {
 
 float lum(const Rgb& c) { return maxChannel(c); }
 
+float livePos(const Engine& e) { return e.liveValues(0)[static_cast<int>(Dest::Position)]; }
+
 int brightest(const Engine& e) {
     int best = 0;
     for (int i = 1; i < e.pixelCount(); ++i)
@@ -119,17 +121,74 @@ TEST_CASE("engine: ADSR timing") {
     CHECK(e.activeVoices() == 0);
 }
 
-TEST_CASE("engine: laser beam moves along the strip") {
+TEST_CASE("engine: laser beam starts at the edge and sweeps the strip") {
     auto e = engineWith("laser.json");
-    e->noteOn(0, 36, 100);
-    run(*e, 0.05f);
+    e->noteOn(0, 60, 100);
+    run(*e, 0.02f);
     int p0 = brightest(*e);
     run(*e, 0.25f);
     int p1 = brightest(*e);
     run(*e, 0.25f);
     int p2 = brightest(*e);
+    CHECK(p0 <= 2);
     CHECK(p0 < p1);
     CHECK(p1 < p2);
+    run(*e, 2.0f);  // one-shot LFO holds at the end of its cycle
+    CHECK(brightest(*e) == kN - 1);
+}
+
+TEST_CASE("engine: stargate sends two accelerating stars out from the centre") {
+    auto e = engineWith("stargate.json");
+    e->noteOn(0, 60, 100);
+    auto brightestIn = [&](int from, int to) {
+        int best = from;
+        for (int i = from; i < to; ++i)
+            if (lum(e->pixels()[i]) > lum(e->pixels()[best])) best = i;
+        return best;
+    };
+    int left[3], right[3];
+    const float times[3] = {0.1f, 0.3f, 0.5f};
+    float t = 0.0f;
+    for (int k = 0; k < 3; ++k) {
+        while (t < times[k]) {  // render every frame, like the plugin and the gear do
+            e->advance(1.0f / 120.0f);
+            e->render();
+            t += 1.0f / 120.0f;
+        }
+        left[k] = brightestIn(0, kN / 2);
+        right[k] = brightestIn(kN / 2, kN);
+        CHECK(std::abs(left[k] + right[k] - (kN - 1)) <= 1);  // mirrored around the centre
+    }
+    CHECK(right[0] < right[1]);
+    CHECK(right[1] - right[0] < right[2] - right[1]);  // speeding up
+    CHECK(left[0] > left[1]);
+}
+
+TEST_CASE("engine: one-shot LFO runs a single cycle per note, then holds") {
+    Preset p = makeInitPreset();
+    Layer& l = p.layers[0];
+    l.emitter.position = 0.0f;
+    l.emitter.width = 0.0f;
+    l.lfo[0].shape = LfoShape::SawUp;
+    l.lfo[0].rate = 1.0f;
+    l.lfo[0].bipolar = false;
+    l.lfo[0].oneShot = true;  // retrigger left off: one-shot implies per voice
+    l.modCount = 0;
+    l.addMod({SourceType::Lfo1, 0}, Dest::Position, 1.0f);
+    Engine e;
+    e.setPreset(p);
+    e.setPixelCount(kN);
+    e.noteOn(0, 60, 100);
+    run(e, 0.5f);
+    CHECK(std::abs(livePos(e) - 0.5f) < 0.05f);
+    run(e, 1.0f);
+    CHECK(std::abs(livePos(e) - 1.0f) < 0.001f);
+    run(e, 1.0f);
+    CHECK(std::abs(livePos(e) - 1.0f) < 0.001f);
+    // A new note starts its own sweep from the beginning.
+    e.noteOn(0, 64, 100);
+    run(e, 0.1f);
+    CHECK(livePos(e) < 0.2f);
 }
 
 TEST_CASE("engine: ambience drone runs without notes and drifts in hue") {

@@ -13,8 +13,8 @@ LayerList::LayerList(MidipixiProcessor& p) : proc_(p) {
     add_.setTooltip("Add a layer");
     dup_.setTooltip("Duplicate the selected layer");
     del_.setTooltip("Delete the selected layer");
-    up_.setTooltip("Move layer down the stack (rendered earlier)");
-    down_.setTooltip("Move layer up the stack (rendered later)");
+    up_.setTooltip("Move layer up (rendered later, on top)");
+    down_.setTooltip("Move layer down (rendered earlier, underneath)");
 
     add_.onClick = [this] {
         auto& pr = proc_.preset();
@@ -37,16 +37,17 @@ LayerList::LayerList(MidipixiProcessor& p) : proc_(p) {
         selected_ = juce::jlimit(0, juce::jmax(0, pr.layerCount - 1), selected_);
         changed();
     };
+    // The list shows the top of the stack (highest index) first.
     up_.onClick = [this] {
-        if (selected_ <= 0) return;
-        proc_.preset().moveLayer(selected_, selected_ - 1);
-        --selected_;
-        changed();
-    };
-    down_.onClick = [this] {
         if (selected_ + 1 >= proc_.preset().layerCount) return;
         proc_.preset().moveLayer(selected_, selected_ + 1);
         ++selected_;
+        changed();
+    };
+    down_.onClick = [this] {
+        if (selected_ <= 0) return;
+        proc_.preset().moveLayer(selected_, selected_ - 1);
+        --selected_;
         changed();
     };
 }
@@ -68,8 +69,8 @@ void LayerList::refresh() {
     add_.setEnabled(pr.layerCount < mpx::kMaxLayers);
     dup_.setEnabled(pr.layerCount > 0 && pr.layerCount < mpx::kMaxLayers);
     del_.setEnabled(pr.layerCount > 0);
-    up_.setEnabled(selected_ > 0);
-    down_.setEnabled(selected_ + 1 < pr.layerCount);
+    up_.setEnabled(selected_ + 1 < pr.layerCount);
+    down_.setEnabled(selected_ > 0);
     repaint();
 }
 

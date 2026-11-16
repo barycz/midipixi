@@ -145,11 +145,15 @@ LayerEditor::LayerEditor(MidipixiProcessor& p) : proc_(p) {
             edited();
             refresh();
         };
-        lfoRetrig_[k].setButtonText("Retrig");
-        lfoRetrig_[k].setTooltip("Restart on every note (per voice). Off: free running, shared by all voices.");
-        lfoRetrig_[k].onClick = [this, k] {
+        lfoMode_[k].addItemList({"Free", "Retrig", "One shot"}, 1);
+        lfoMode_[k].setTooltip("Free: runs continuously, shared by all voices.\n"
+                               "Retrig: restarts on every note (per voice).\n"
+                               "One shot: runs a single cycle on every note, then holds at the end.");
+        lfoMode_[k].onChange = [this, k] {
             if (updating_) return;
-            layer().lfo[k].retrigger = lfoRetrig_[k].getToggleState();
+            int id = lfoMode_[k].getSelectedId();
+            layer().lfo[k].retrigger = id >= 2;
+            layer().lfo[k].oneShot = id == 3;
             edited();
         };
         lfoBipolar_[k].setButtonText("+/-");
@@ -159,7 +163,7 @@ LayerEditor::LayerEditor(MidipixiProcessor& p) : proc_(p) {
             layer().lfo[k].bipolar = lfoBipolar_[k].getToggleState();
             edited();
         };
-        for (juce::Component* c : std::initializer_list<juce::Component*>{&lfoShape_[k], &lfoBeats_[k], &lfoSync_[k], &lfoRetrig_[k], &lfoBipolar_[k]})
+        for (juce::Component* c : std::initializer_list<juce::Component*>{&lfoShape_[k], &lfoMode_[k], &lfoBeats_[k], &lfoSync_[k], &lfoBipolar_[k]})
             addAndMakeVisible(c);
     }
 
@@ -255,7 +259,7 @@ void LayerEditor::refresh() {
         lfoShape_[k].setSelectedId(static_cast<int>(o.shape) + 1, juce::dontSendNotification);
         lfoBeats_[k].setSelectedId(beatIndex(o.beats) + 1, juce::dontSendNotification);
         lfoSync_[k].setToggleState(o.sync, juce::dontSendNotification);
-        lfoRetrig_[k].setToggleState(o.retrigger, juce::dontSendNotification);
+        lfoMode_[k].setSelectedId(o.oneShot ? 3 : (o.retrigger ? 2 : 1), juce::dontSendNotification);
         lfoBipolar_[k].setToggleState(o.bipolar, juce::dontSendNotification);
         lfoBeats_[k].setVisible(o.sync);
         if (!lfoKnobs_[k].empty()) lfoKnobs_[k][0]->setVisible(!o.sync);
@@ -338,12 +342,14 @@ void LayerEditor::resized() {
         layoutKnobs(envKnobs_[e], content(secEnv_[e]), juce::jmin(84, content(secEnv_[e]).getWidth() / 4));
     for (int k = 0; k < mpx::kNumLfos; ++k) {
         auto c = content(secLfo_[k]);
-        lfoShape_[k].setBounds(c.removeFromTop(22));
+        auto top = c.removeFromTop(22);
+        lfoShape_[k].setBounds(top.removeFromLeft(top.getWidth() * 3 / 5));
+        top.removeFromLeft(4);
+        lfoMode_[k].setBounds(top);
         c.removeFromTop(4);
         auto toggles = c.removeFromBottom(22);
-        int tw = toggles.getWidth() / 3;
+        int tw = toggles.getWidth() / 2;
         lfoSync_[k].setBounds(toggles.removeFromLeft(tw));
-        lfoRetrig_[k].setBounds(toggles.removeFromLeft(tw));
         lfoBipolar_[k].setBounds(toggles);
         auto knobs = c;
         int kw = knobs.getWidth() / 2;

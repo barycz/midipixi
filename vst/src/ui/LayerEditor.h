@@ -51,7 +51,7 @@ protected:
     juce::ToggleButton wrap_{"Wrap"};
 
     std::vector<std::unique_ptr<ParamKnob>> layerKnobs_, emitterKnobs_, envKnobs_[2], lfoKnobs_[3];
-    juce::ComboBox lfoShape_[3], lfoBeats_[3];
-    juce::ToggleButton lfoSync_[3], lfoRetrig_[3], lfoBipolar_[3];
+    juce::ComboBox lfoShape_[3], lfoBeats_[3], lfoMode_[3];
+    juce::ToggleButton lfoSync_[3], lfoBipolar_[3];
     bool updating_ = false;
 };
