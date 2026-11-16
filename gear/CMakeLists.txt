@@ -1,25 +1,8 @@
 # midipixi gear firmware (configured from the root with -DMIDIPIXI_GEAR=ON)
 
 # Factory presets are embedded and written to slots 0..N-1 on first boot.
-set(MPX_FACTORY_PRESETS
-    note-visualisation
-    strobe
-    laser
-    ambience
-    rainbow-chase
-    live-set
-)
-set(MPX_FACTORY_HEADER ${CMAKE_CURRENT_BINARY_DIR}/generated/factory_presets.h)
-set(content "// Generated from presets/*.json - do not edit.\n#pragma once\n\nstatic const char* const kFactoryPresets[] = {\n")
-foreach(name ${MPX_FACTORY_PRESETS})
-    set(file ${PROJECT_SOURCE_DIR}/presets/${name}.json)
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${file})
-    file(READ ${file} json)
-    string(APPEND content "    R\"MPXJSON(${json})MPXJSON\",\n")
-endforeach()
-list(LENGTH MPX_FACTORY_PRESETS count)
-string(APPEND content "};\nstatic const int kFactoryPresetCount = ${count};\n")
-file(CONFIGURE OUTPUT ${MPX_FACTORY_HEADER} CONTENT "${content}" @ONLY)
+include(${PROJECT_SOURCE_DIR}/cmake/EmbedPresets.cmake)
+mpx_embed_presets(${CMAKE_CURRENT_BINARY_DIR}/generated/factory_presets.h ${MPX_FACTORY_PRESETS})
 
 add_executable(midipixi_gear
     src/main.cpp

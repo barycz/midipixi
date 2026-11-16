@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: midipixi-vst3-windows
-          path: build/desktop/vst/MidipixiVST_artefacts/**/VST3/**
+          path: build/desktop/vst/MidipixiVST_artefacts/RelWithDebInfo/VST3/
 
   gear:
     runs-on: ubuntu-latest

@@ -53,3 +53,7 @@ if(MIDIPIXI_BUILD_TOOLS)
     add_subdirectory(tools/mpx-cli)
 endif()
 
+if(MIDIPIXI_BUILD_VST)
+    add_subdirectory(vst)
+endif()
+
