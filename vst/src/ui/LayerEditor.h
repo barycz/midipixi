@@ -48,7 +48,7 @@ protected:
     juce::ComboBox trigger_, channel_, blend_;
     juce::Slider noteLow_, noteHigh_, voices_;
     juce::Label noteLowLabel_, noteHighLabel_, voicesLabel_;
-    juce::ToggleButton wrap_{"Wrap"};
+    juce::ToggleButton wrap_{"Wrap"}, stack_{"Stack"};
 
     std::vector<std::unique_ptr<ParamKnob>> layerKnobs_, emitterKnobs_, envKnobs_[2], lfoKnobs_[3];
     juce::ComboBox lfoShape_[3], lfoBeats_[3], lfoMode_[3];

@@ -150,10 +150,12 @@ Voice* Engine::allocVoice(int layerIndex, int channel, int note) {
     const Layer& l = preset_.layers[layerIndex];
     LayerState& ls = layers_[layerIndex];
     int maxV = l.voices < 1 ? 1 : (l.voices > kMaxVoices ? kMaxVoices : l.voices);
-    // Same note already sounding: retrigger it.
-    for (int i = 0; i < maxV; ++i) {
-        Voice& v = ls.voices[i];
-        if (v.active && v.note == note && v.channel == channel) return &v;
+    // Same note already sounding: retrigger it (unless the layer stacks notes).
+    if (!l.stack) {
+        for (int i = 0; i < maxV; ++i) {
+            Voice& v = ls.voices[i];
+            if (v.active && v.note == note && v.channel == channel) return &v;
+        }
     }
     for (int i = 0; i < maxV; ++i)
         if (!ls.voices[i].active) return &ls.voices[i];
@@ -232,12 +234,18 @@ void Engine::noteOff(int channel, int note) {
             monoNoteOff(i, channel, note);
             continue;
         }
+        // Stacked layers can hold the same note several times: release the
+        // oldest held one per note-off. Otherwise there is at most one.
+        Voice* oldest = nullptr;
         for (Voice& v : layers_[i].voices) {
-            if (!v.active || !v.gate || v.note != note || v.channel != channel) continue;
+            if (!v.active || !v.gate || v.sustained || v.note != note || v.channel != channel) continue;
+            if (!oldest || v.serial < oldest->serial) oldest = &v;
+        }
+        if (oldest) {
             if (sustainPedal_)
-                v.sustained = true;
+                oldest->sustained = true;
             else
-                releaseVoice(v);
+                releaseVoice(*oldest);
         }
     }
 }

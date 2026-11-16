@@ -46,6 +46,7 @@ void writeLayer(const Layer& l, JsonWriter& w) {
     w.key("noteRange").beginArray().value(static_cast<int>(l.noteLow)).value(static_cast<int>(l.noteHigh)).endArray();
     w.field("voices", static_cast<int>(l.voices));
     w.field("wrap", l.wrap);
+    if (l.stack) w.field("stack", true);
     w.field("blend", toString(l.blend));
     w.field("opacity", l.opacity);
     w.key("emitter");
@@ -131,6 +132,7 @@ bool readLayer(const JsonDoc& d, int obj, Layer& l, char* err, size_t errCap) {
     }
     l.voices = static_cast<uint8_t>(inum(d, obj, "voices", l.voices, 1, kMaxVoices));
     l.wrap = d.getBool(obj, "wrap", l.wrap);
+    l.stack = d.getBool(obj, "stack", l.stack);
     l.opacity = num(d, obj, "opacity", l.opacity);
 
     int em = d.find(obj, "emitter");

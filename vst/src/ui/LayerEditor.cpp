@@ -120,6 +120,14 @@ LayerEditor::LayerEditor(MidipixiProcessor& p) : proc_(p) {
     };
     wrap_.setTooltip("Positions wrap around the strip ends (rings, loops)");
     addAndMakeVisible(wrap_);
+    stack_.onClick = [this] {
+        if (updating_) return;
+        layer().stack = stack_.getToggleState();
+        edited();
+    };
+    stack_.setTooltip("Repeating a note that is still sounding starts another emitter instead of restarting it "
+                      "(e.g. rapid laser shots)");
+    addAndMakeVisible(stack_);
 
     for (int k = 0; k < mpx::kNumLfos; ++k) {
         for (int s = 0; s < static_cast<int>(mpx::LfoShape::Count); ++s) {
@@ -254,6 +262,8 @@ void LayerEditor::refresh() {
     voices_.setValue(l.voices, juce::dontSendNotification);
     voices_.setEnabled(l.trigger == mpx::TriggerMode::Poly);
     wrap_.setToggleState(l.wrap, juce::dontSendNotification);
+    stack_.setToggleState(l.stack, juce::dontSendNotification);
+    stack_.setEnabled(l.trigger == mpx::TriggerMode::Poly);
     for (int k = 0; k < mpx::kNumLfos; ++k) {
         const auto& o = l.lfo[k];
         lfoShape_[k].setSelectedId(static_cast<int>(o.shape) + 1, juce::dontSendNotification);
@@ -331,6 +341,8 @@ void LayerEditor::resized() {
         bottom.removeFromLeft(10);
         voicesLabel_.setBounds(bottom.removeFromLeft(44));
         voices_.setBounds(bottom.removeFromLeft(100));
+        bottom.removeFromLeft(10);
+        stack_.setBounds(bottom.removeFromLeft(70));
         auto knobArea = content(secLayer_).removeFromRight(70);
         if (!layerKnobs_.empty()) layerKnobs_[0]->setBounds(knobArea);
     }

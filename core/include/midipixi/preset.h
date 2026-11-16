@@ -129,6 +129,7 @@ struct Layer {
     uint8_t noteHigh = 127;
     uint8_t voices = 8;   // 1..kMaxVoices (poly mode)
     bool wrap = false;    // positions wrap around the strip ends
+    bool stack = false;   // poly: repeating a sounding note starts another voice instead of retriggering it
     BlendMode blend = BlendMode::Add;
     float opacity = 1.0f;
     EmitterParams emitter;

@@ -20,6 +20,7 @@ sources, destinations, …) are errors.
       "noteRange": [0, 127],
       "voices": 4,
       "wrap": false,
+      "stack": false,
       "blend": "add",
       "opacity": 1,
       "emitter": { "position": 0.5, "width": 1, "softness": 0, "hue": 0,
@@ -51,6 +52,7 @@ sources, destinations, …) are errors.
 | `noteRange` | `[0, 127]` | Key zone. Also defines the `note` source: low note = 0, high note = 1. |
 | `voices` | `8` | 1–16 (poly) |
 | `wrap` | `false` | Positions wrap around the strip ends (rings, loops). |
+| `stack` | `false` | Poly only. `true`: playing a note that is still sounding (held or releasing) starts another voice; each note-off releases the oldest held one. `false`: the sounding voice is retriggered. Use it with one-shot LFOs so rapid repeats send several emitters. |
 | `blend` | `"add"` | `add`, `screen`, `multiply`, `subtract`, `lighten`, `darken`, `difference`, `normal`, `hue`, `hueshift`, `mask` |
 | `opacity` | `1` | 0–1, modulatable (`opacity`) |
 | `emitter` | see below | Base values of the light shape |

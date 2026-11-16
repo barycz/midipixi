@@ -7,6 +7,7 @@
       "name": "Beam",
       "trigger": "poly",
       "voices": 12,
+      "stack": true,
       "noteRange": [36, 96],
       "emitter": { "position": 0, "width": 0.02, "softness": 0.7, "hue": 0.95, "saturation": 1, "brightness": 0 },
       "envs": [

@@ -137,6 +137,41 @@ TEST_CASE("engine: laser beam starts at the edge and sweeps the strip") {
     CHECK(brightest(*e) == kN - 1);
 }
 
+TEST_CASE("engine: stacked layer sends a new laser shot on each repeat of a note") {
+    auto e = engineWith("laser.json");  // stack: true
+    e->noteOn(0, 60, 100);
+    run(*e, 0.3f);
+    e->noteOff(0, 60);
+    e->noteOn(0, 60, 100);  // first shot is still releasing
+    run(*e, 0.02f);
+    CHECK(e->activeVoices(0) == 2);
+    CHECK(lum(e->pixels()[0]) > 0.1f);  // new shot at the start
+    int far = 0;
+    for (int i = 10; i < kN; ++i) far += lum(e->pixels()[i]) > 0.05f ? 1 : 0;
+    CHECK(far > 0);  // first shot kept going
+
+    // Each note-off releases one held copy of the note (oldest first).
+    e->noteOn(0, 60, 100);
+    e->noteOff(0, 60);
+    run(*e, 1.0f);
+    CHECK(e->activeVoices(0) == 1);
+    e->noteOff(0, 60);
+    run(*e, 1.0f);
+    CHECK(e->activeVoices(0) == 0);
+}
+
+TEST_CASE("engine: unstacked layer retriggers a repeated note") {
+    Preset p = makeInitPreset();
+    Engine e;
+    e.setPreset(p);
+    e.setPixelCount(kN);
+    e.noteOn(0, 60, 100);
+    e.noteOff(0, 60);
+    e.noteOn(0, 60, 100);
+    run(e, 0.01f);
+    CHECK(e.activeVoices(0) == 1);
+}
+
 TEST_CASE("engine: stargate sends two accelerating stars out from the centre") {
     auto e = engineWith("stargate.json");
     e->noteOn(0, 60, 100);
