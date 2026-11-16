@@ -1,0 +1,17 @@
+{
+  "format": "midipixi/1",
+  "name": "Strobe",
+  "author": "midipixi",
+  "layers": [
+    {
+      "name": "Flash",
+      "trigger": "poly",
+      "voices": 4,
+      "emitter": { "position": 0.5, "width": 1, "softness": 0, "hue": 0, "saturation": 0, "brightness": 0 },
+      "envs": [ { "attack": 0.001, "decay": 0.12, "sustain": 0, "release": 0.05 } ],
+      "mods": [
+        { "source": "env1", "dest": "brightness", "amount": 1 }
+      ]
+    }
+  ]
+}

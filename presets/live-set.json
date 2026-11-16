@@ -1,0 +1,43 @@
+{
+  "format": "midipixi/1",
+  "name": "Live Set",
+  "author": "midipixi",
+  "macros": [ { "name": "Ambience", "value": 0.5, "cc": 20 } ],
+  "layers": [
+    {
+      "name": "Ambience",
+      "trigger": "drone",
+      "emitter": { "position": 0.5, "width": 1, "hue": 0.65, "saturation": 0.9, "brightness": 0, "hueSpread": 0.2 },
+      "lfos": [ { "shape": "smoothrandom", "rate": 0.1 } ],
+      "mods": [
+        { "source": "lfo1", "dest": "hue", "amount": 0.15 },
+        { "source": "macro1", "dest": "brightness", "amount": 0.4 }
+      ]
+    },
+    {
+      "name": "Kick strobe",
+      "trigger": "poly",
+      "voices": 2,
+      "noteRange": [36, 36],
+      "blend": "screen",
+      "emitter": { "position": 0.5, "width": 1, "saturation": 0, "brightness": 0 },
+      "envs": [ { "attack": 0.001, "decay": 0.15, "sustain": 0, "release": 0.05 } ],
+      "mods": [ { "source": "env1", "dest": "brightness", "amount": 0.8, "via": "velocity" } ]
+    },
+    {
+      "name": "Melody",
+      "trigger": "poly",
+      "voices": 12,
+      "noteRange": [48, 96],
+      "blend": "lighten",
+      "emitter": { "position": 0, "width": 0.03, "softness": 0.5, "hue": 0, "saturation": 1, "brightness": 0 },
+      "envs": [ { "attack": 0.01, "decay": 0.5, "sustain": 0.5, "release": 0.6 } ],
+      "mods": [
+        { "source": "note", "dest": "position", "amount": 1 },
+        { "source": "note", "dest": "hue", "amount": 1 },
+        { "source": "env1", "dest": "brightness", "amount": 1 },
+        { "source": "cc1", "dest": "width", "amount": 0.3 }
+      ]
+    }
+  ]
+}

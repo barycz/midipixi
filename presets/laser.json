@@ -1,0 +1,24 @@
+{
+  "format": "midipixi/1",
+  "name": "Laser",
+  "author": "midipixi",
+  "layers": [
+    {
+      "name": "Beam",
+      "trigger": "poly",
+      "voices": 12,
+      "noteRange": [36, 96],
+      "emitter": { "position": 0, "width": 0.02, "softness": 0.7, "hue": 0.95, "saturation": 1, "brightness": 0 },
+      "envs": [
+        { "attack": 0.002, "decay": 0, "sustain": 1, "release": 0.15 },
+        { "attack": 0.6, "decay": 0, "sustain": 1, "release": 0 }
+      ],
+      "mods": [
+        { "source": "note", "dest": "position", "amount": 1 },
+        { "source": "env2", "dest": "position", "amount": 0.6 },
+        { "source": "env1", "dest": "brightness", "amount": 1 },
+        { "source": "velocity", "dest": "hue", "amount": 0.25 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "format": "midipixi/1",
+  "name": "Ambience",
+  "author": "midipixi",
+  "macros": [ { "name": "Intensity", "value": 0, "cc": 20 } ],
+  "layers": [
+    {
+      "name": "Wash",
+      "trigger": "drone",
+      "emitter": { "position": 0.5, "width": 1, "softness": 0, "hue": 0.6, "saturation": 0.9, "brightness": 0, "hueSpread": 0.25 },
+      "envs": [ { "attack": 2, "decay": 0, "sustain": 1, "release": 2 } ],
+      "lfos": [ { "shape": "sine", "rate": 0.03, "bipolar": true } ],
+      "mods": [
+        { "source": "lfo1", "dest": "hue", "amount": 0.5 },
+        { "source": "env1", "dest": "brightness", "amount": 0.3 },
+        { "source": "macro1", "dest": "brightness", "amount": 0.6 }
+      ]
+    }
+  ]
+}

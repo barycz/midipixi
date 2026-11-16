@@ -9,7 +9,7 @@ if not defined VSINSTALL (
   echo Visual Studio with C++ tools not found
   exit /b 1
 )
-call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
 set "ROOT=%~dp0.."
 if exist "%ROOT%\.tools\arm-gnu-toolchain\bin" set "PATH=%ROOT%\.tools\arm-gnu-toolchain\bin;%PATH%"
 if not defined PICO_SDK_PATH if exist "%ROOT%\.tools\pico-sdk" set "PICO_SDK_PATH=%ROOT%\.tools\pico-sdk"

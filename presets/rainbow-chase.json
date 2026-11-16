@@ -1,0 +1,18 @@
+{
+  "format": "midipixi/1",
+  "name": "Rainbow Chase",
+  "author": "midipixi",
+  "layers": [
+    {
+      "name": "Chase",
+      "trigger": "drone",
+      "wrap": true,
+      "emitter": { "position": 0, "width": 0.3, "softness": 0.8, "hue": 0, "saturation": 1, "brightness": 0.8, "hueSpread": 1 },
+      "lfos": [ { "shape": "sawup", "sync": true, "beats": 4, "bipolar": false } ],
+      "mods": [
+        { "source": "lfo1", "dest": "position", "amount": 1 },
+        { "source": "lfo1", "dest": "hue", "amount": 1 }
+      ]
+    }
+  ]
+}

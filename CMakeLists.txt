@@ -45,3 +45,7 @@ if(MIDIPIXI_BUILD_TESTS)
     add_subdirectory(core/tests)
 endif()
 
+if(MIDIPIXI_BUILD_TOOLS)
+    add_subdirectory(tools/mpx-cli)
+endif()
+
