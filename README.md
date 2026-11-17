@@ -10,6 +10,8 @@ If you can build a synth patch, you can build a midipixi preset: emitters
 instead of oscillators, ADSRs and LFOs, MIDI CCs and macros wired through a
 modulation matrix, layers blended like stacked sounds.
 
+![The midipixi VST editor: LED strip simulator with waterfall, layer list, emitter, envelope and LFO controls, the modulation sources and the gear panel](docs/vst.png)
+
 | Component | What it is |
 |---|---|
 | **midipixi gear** | A Raspberry Pi Pico 2 that plugs into USB, shows up as a MIDI device and drives WS2812 (NeoPixel) strips. No UI; presets are uploaded over USB serial and selected with MIDI Program Change. |
