@@ -15,7 +15,8 @@ void LedStripView::setPixels(const mpx::Rgb* px, int count) {
 
 void LedStripView::paint(juce::Graphics& g) {
     auto area = getLocalBounds().toFloat();
-    g.setColour(juce::Colour(0xff0b0c0f));
+    // Black like an unlit LED, so dim values fade smoothly into it.
+    g.setColour(juce::Colours::black);
     g.fillRoundedRectangle(area, 6.0f);
 
     const int n = static_cast<int>(pixels_.size());
@@ -60,9 +61,6 @@ void LedStripView::paint(juce::Graphics& g) {
 
     // Waterfall: newest row at the top
     if (!history_.empty()) {
-        // Black like an unlit LED, so dim values fade smoothly into it.
-        g.setColour(juce::Colours::black);
-        g.fillRect(waterfall.withX(stripArea.getX()).withWidth(stripArea.getWidth()));
         const float rowH = waterfall.getHeight() / static_cast<float>(kHistory);
         for (int r = 0; r < kHistory; ++r) {
             int idx = (historyPos_ - 1 - r + kHistory * 2) % kHistory;
