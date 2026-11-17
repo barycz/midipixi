@@ -77,6 +77,11 @@ bool Ws2812Output::init(unsigned pin) {
     return true;
 }
 
+uint32_t Ws2812Output::transferUs(int count) {
+    if (count < 0) count = 0;
+    return static_cast<uint32_t>(count) * kUsPerPixel + kLatchUs;
+}
+
 bool Ws2812Output::busy() const { return dma_ >= 0 && dma_channel_is_busy(static_cast<unsigned>(dma_)); }
 
 void Ws2812Output::show(const uint8_t* bytes, int count) {
@@ -91,7 +96,7 @@ void Ws2812Output::show(const uint8_t* bytes, int count) {
         words_[i] = (static_cast<uint32_t>(p[0]) << 24) | (static_cast<uint32_t>(p[1]) << 16) |
                     (static_cast<uint32_t>(p[2]) << 8);
     }
-    readyAtUs_ = time_us_64() + static_cast<uint64_t>(count) * kUsPerPixel + kLatchUs;
+    readyAtUs_ = time_us_64() + transferUs(count);
     dma_channel_transfer_from_buffer_now(static_cast<unsigned>(dma_), words_, static_cast<uint32_t>(count));
 }
 

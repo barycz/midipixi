@@ -22,6 +22,7 @@ struct RenderStats {
     uint32_t avgRenderUs = 0;
     uint32_t droppedMidi = 0;
     uint32_t lateFrames = 0;    // frames that could not keep the frame rate
+    uint32_t refreshes = 0;     // strip refreshes (dither steps) in the last frame
     int voices = 0;
     float currentMa = 0.0f;
     float limiter = 1.0f;

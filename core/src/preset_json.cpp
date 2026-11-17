@@ -294,6 +294,7 @@ void writeConfig(const OutputConfig& c, JsonWriter& w) {
     w.field("maPerChannel", c.maPerChannel);
     w.field("idleMaPerLed", c.idleMaPerLed);
     w.field("dither", c.dither);
+    w.field("ditherLevels", static_cast<int>(c.ditherLevels));
     w.field("reverse", c.reverse);
     w.field("fps", static_cast<int>(c.fps));
     w.field("dataPin", static_cast<int>(c.dataPin));
@@ -315,6 +316,7 @@ bool readConfig(const JsonDoc& d, int node, OutputConfig& out, char* err, size_t
     c.maPerChannel = num(d, node, "maPerChannel", c.maPerChannel);
     c.idleMaPerLed = num(d, node, "idleMaPerLed", c.idleMaPerLed);
     c.dither = d.getBool(node, "dither", c.dither);
+    c.ditherLevels = static_cast<uint16_t>(inum(d, node, "ditherLevels", c.ditherLevels, 1, 256));
     c.reverse = d.getBool(node, "reverse", c.reverse);
     c.fps = static_cast<uint16_t>(inum(d, node, "fps", c.fps, 10, 200));
     c.dataPin = static_cast<uint8_t>(inum(d, node, "dataPin", c.dataPin, 0, 29));

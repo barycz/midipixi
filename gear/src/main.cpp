@@ -96,6 +96,7 @@ public:
         w.field("renderMaxUs", static_cast<unsigned>(s.maxRenderUs));
         w.field("frameBudgetUs", static_cast<unsigned>(1000000u / g_config.fps));
         w.field("lateFrames", static_cast<unsigned>(s.lateFrames));
+        w.field("refreshesPerFrame", static_cast<unsigned>(s.refreshes));
         w.field("voices", s.voices);
         w.field("currentMa", s.currentMa);
         w.field("limiter", s.limiter);

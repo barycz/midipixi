@@ -88,9 +88,27 @@ void core1Main() {
 
         g_engine.render();
         const int n = g_engine.pixelCount();
-        g_output.process(g_engine.pixels(), n, g_bytes);
+        g_output.prepare(g_engine.pixels(), n);
+        g_output.emit(g_bytes);
         const uint32_t renderUs = static_cast<uint32_t>(time_us_64() - frameStart);
         g_strip.show(g_bytes, n);
+
+        const uint32_t frameUs = 1000000u / g_output.config().fps;
+        nextFrameUs += frameUs;
+
+        // Dither refreshes: while another whole transfer fits before the next
+        // frame is due, resend this frame with the next dither step. Dim LEDs
+        // toggle between two 8-bit levels; at the strip's refresh rate
+        // (~250 Hz at 120 LEDs) instead of the frame rate that is not visible.
+        uint32_t refreshes = 1;
+        if (g_output.config().dither) {
+            const uint64_t txUs = Ws2812Output::transferUs(n);
+            while (g_strip.readyAtUs() + txUs <= nextFrameUs) {
+                g_output.emit(g_bytes);
+                g_strip.show(g_bytes, n);
+                ++refreshes;
+            }
+        }
 
         // Stats
         renderSum += renderUs;
@@ -111,10 +129,9 @@ void core1Main() {
         g_stats.currentMa = g_output.lastCurrentMa();
         g_stats.limiter = g_output.lastLimiterScale();
         g_stats.bpm = static_cast<float>(g_engine.bpm());
+        g_stats.refreshes = refreshes;
 
         // Frame pacing
-        const uint32_t frameUs = 1000000u / g_output.config().fps;
-        nextFrameUs += frameUs;
         uint64_t now = time_us_64();
         if (nextFrameUs < now) {
             g_stats.lateFrames = g_stats.lateFrames + 1;
@@ -175,6 +192,7 @@ RenderStats renderReadStats(bool resetMax) {
     s.currentMa = g_stats.currentMa;
     s.limiter = g_stats.limiter;
     s.bpm = g_stats.bpm;
+    s.refreshes = g_stats.refreshes;
     if (resetMax) g_resetMax = true;
     return s;
 }

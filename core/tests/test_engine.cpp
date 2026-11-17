@@ -539,6 +539,7 @@ TEST_CASE("output: gamma, color order, power limit and dithering") {
     // Dithering: the average of many frames converges on the exact value.
     c.powerLimitMa = 0;
     c.dither = true;
+    c.ditherLevels = 256;
     c.gamma = 1.0f;
     o.configure(c);
     Rgb dim[1] = {{0.0025f, 0, 0}};  // 0.6375 of one 8-bit step
@@ -549,4 +550,61 @@ TEST_CASE("output: gamma, color order, power limit and dithering") {
         sum += out[1];
     }
     CHECK_NEAR(static_cast<double>(sum) / frames, 0.6375, 0.02);
+}
+
+TEST_CASE("output: repeated emits dither one prepared frame, LEDs out of phase") {
+    OutputStage o;
+    OutputConfig c;
+    c.ledCount = 60;
+    c.gamma = 1.0f;
+    c.colorOrder = ColorOrder::RGB;
+    o.configure(c);
+    Rgb dim[60];
+    for (Rgb& p : dim) p = {0.001f, 0.001f, 0.001f};  // 0.255 of one 8-bit step -> 1/4 level
+    o.prepare(dim, 60);
+    CHECK(o.preparedCount() == 60);
+    uint8_t out[180];
+    int perLed[60] = {};
+    const int refreshes = 200;
+    for (int r = 0; r < refreshes; ++r) {
+        o.emit(out);
+        int lit = 0;
+        for (int i = 0; i < 60; ++i) {
+            CHECK(out[i * 3] == out[i * 3 + 1] && out[i * 3] == out[i * 3 + 2]);  // no color flicker
+            lit += out[i * 3];
+            perLed[i] += out[i * 3];
+        }
+        // About a quarter of the strip is on at any time, never all or nothing.
+        CHECK(lit >= 10 && lit <= 20);
+    }
+    for (int i = 0; i < 60; ++i) CHECK(perLed[i] == 50);  // exactly 1 in 4 refreshes
+
+    // With 4 levels no pattern is longer than 4 refreshes, at any level.
+    for (float v : {0.0007f, 0.003f, 0.0045f, 0.0062f, 0.02f}) {
+        Rgb px[1] = {{v, 0, 0}};
+        o.prepare(px, 1);
+        uint8_t seq[12][3];
+        for (auto& s : seq) o.emit(s);
+        for (int r = 0; r + 4 < 12; ++r) CHECK(seq[r][0] == seq[r + 4][0]);
+    }
+    // Below half a level the LED is off rather than blinking slowly.
+    Rgb faint[1] = {{0.0004f, 0, 0}};  // 0.1 of a step
+    o.prepare(faint, 1);
+    for (int r = 0; r < 20; ++r) {
+        o.emit(out);
+        CHECK(out[0] == 0);
+    }
+    c.ditherLevels = 3;  // rounded down to a power of two
+    o.configure(c);
+    CHECK(o.config().ditherLevels == 2);
+
+    // Without dithering every emit is the same rounded frame.
+    c.dither = false;
+    o.configure(c);
+    Rgb half[1] = {{0.5f, 0, 0}};
+    o.prepare(half, 1);
+    uint8_t a[3], b[3];
+    o.emit(a);
+    o.emit(b);
+    CHECK(a[0] == 128 && b[0] == 128);
 }

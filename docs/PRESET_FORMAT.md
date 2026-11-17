@@ -113,7 +113,9 @@ Hardware settings live on the gear, not in presets:
 ```json
 { "format": "midipixi-config/1", "ledCount": 60, "colorOrder": "grb", "gamma": 2.2,
   "brightness": 1, "powerLimitMa": 2000, "maPerChannel": 20, "idleMaPerLed": 1,
-  "dither": true, "reverse": false, "fps": 60, "dataPin": 2 }
+  "dither": true, "ditherLevels": 4, "reverse": false, "fps": 60, "dataPin": 2 }
 ```
 
-`powerLimitMa` 0 disables the limiter. `dataPin` changes take effect after a reboot.
+`powerLimitMa` 0 disables the limiter. `ditherLevels` (1, 2, 4 … 256) is the
+number of dither levels between two 8-bit steps: more levels give smoother dim
+fades, fewer keep the dimmest levels from blinking slowly (see ARCHITECTURE.md). `dataPin` changes take effect after a reboot.

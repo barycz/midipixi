@@ -56,7 +56,9 @@ clock to it for tempo-synced effects. Program Change *n* switches to slot *n*.
   activity LED.
 - Core 1: engine + output stage at a fixed frame rate (default 60 fps).
   MIDI events are timestamped on core 0 and applied at their time on core 1.
-- PIO0 + one DMA channel stream the frame to the strip.
+- PIO0 + one DMA channel stream the frame to the strip. With dithering on, the
+  frame is resent with new dither steps until the next frame is due (about
+  250 refreshes/s at 120 LEDs), which keeps dim fades flicker-free.
 - Flash writes pause core 1 briefly (`flash_safe_execute`). Program Change
   never writes flash.
 

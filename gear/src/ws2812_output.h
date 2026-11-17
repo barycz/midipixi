@@ -15,6 +15,10 @@ public:
     // Waits for the previous frame (plus the latch gap) before starting.
     void show(const uint8_t* bytes, int count);
     bool busy() const;
+    // Time at which the next show() can start without waiting.
+    uint64_t readyAtUs() const { return readyAtUs_; }
+    // Duration of one transfer of `count` pixels, including the latch gap.
+    static uint32_t transferUs(int count);
 
 private:
     unsigned sm_ = 0;

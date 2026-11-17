@@ -133,6 +133,25 @@ Gamma curve (default 2.2), master brightness, power limiter (estimates current
 from pixel values and scales the frame down to a mA budget), temporal
 dithering (smooth slow fades at low brightness), color order, reverse.
 
+Dithering carries each LED's rounding error into the next output frame, so a
+level between two 8-bit steps alternates between them. Below a few steps
+(roughly perceptual brightness < 0.15 at gamma 2.2) that alternation is a large
+relative change, and at the engine frame rate it is visible flicker. Two things
+keep it invisible:
+
+- The gear refreshes the strip with new dither steps between engine frames for
+  as long as a whole transfer fits (`prepare()` once per frame, `emit()` per
+  refresh): about 250 Hz at 120 LEDs, 470 Hz at 60 LEDs. `mpx-cli info` reports
+  `refreshesPerFrame`.
+- Every LED starts at a different dither phase, so LEDs at the same dim level
+  take turns instead of switching on and off together.
+- Levels are rounded to `ditherLevels` (default 4) sub-steps between two 8-bit
+  steps. A level of 0.1 step would otherwise light an LED once every 10
+  refreshes (~25 Hz, visible); with 4 levels every pattern repeats within 4
+  refreshes (≥ 60 Hz at 240 Hz refresh), and anything below 1/8 of a step is
+  off. Lower it to 2 if the dimmest levels still shimmer, raise it for smoother
+  fades on short strips (which refresh faster).
+
 A WS2812 draws ~60 mA at full white: 300 LEDs ≈ 18 A. **Set the power limit to
 what your supply can deliver.**
 
