@@ -336,36 +336,37 @@ void LayerEditor::resized() {
         lfoRow.removeFromLeft(gap);
     }
 
-    // Layer section
+    // Layer section: two rows of controls, then Glide and Opacity knobs on the right.
     {
         auto c = content(secLayer_);
-        auto top = c.removeFromTop(24);
-        name_.setBounds(top.removeFromLeft(170));
-        top.removeFromLeft(8);
-        trigger_.setBounds(top.removeFromLeft(90));
-        top.removeFromLeft(8);
-        channel_.setBounds(top.removeFromLeft(80));
-        top.removeFromLeft(8);
-        blend_.setBounds(top.removeFromLeft(110));
-        top.removeFromLeft(8);
-        wrap_.setBounds(top.removeFromLeft(70));
-        c.removeFromTop(8);
-        auto bottom = c.removeFromTop(24);
-        noteLowLabel_.setBounds(bottom.removeFromLeft(34));
-        noteLow_.setBounds(bottom.removeFromLeft(120));
-        bottom.removeFromLeft(10);
-        noteHighLabel_.setBounds(bottom.removeFromLeft(36));
-        noteHigh_.setBounds(bottom.removeFromLeft(120));
-        bottom.removeFromLeft(10);
-        voicesLabel_.setBounds(bottom.removeFromLeft(44));
-        voices_.setBounds(bottom.removeFromLeft(100));
-        bottom.removeFromLeft(10);
-        stack_.setBounds(bottom.removeFromLeft(70));
-        bottom.removeFromLeft(10);
-        glideMode_.setBounds(bottom.removeFromLeft(110));
-        auto knobArea = content(secLayer_).removeFromRight(140);
+        auto knobArea = c.removeFromRight(140);
         if (layerKnobs_.size() > 0) layerKnobs_[0]->setBounds(knobArea.removeFromRight(70));
         if (layerKnobs_.size() > 1) layerKnobs_[1]->setBounds(knobArea);
+        c.removeFromRight(6);
+
+        auto top = c.removeFromTop(24);
+        name_.setBounds(top.removeFromLeft(150));
+        top.removeFromLeft(8);
+        trigger_.setBounds(top.removeFromLeft(84));
+        top.removeFromLeft(8);
+        channel_.setBounds(top.removeFromLeft(76));
+        top.removeFromLeft(8);
+        blend_.setBounds(top.removeFromLeft(100));
+        top.removeFromLeft(8);
+        wrap_.setBounds(top.removeFromLeft(64));
+        stack_.setBounds(top.removeFromLeft(64));
+        c.removeFromTop(8);
+
+        auto bottom = c.removeFromTop(24);
+        glideMode_.setBounds(bottom.removeFromRight(104));  // next to the Glide knob
+        noteLowLabel_.setBounds(bottom.removeFromLeft(30));
+        noteLow_.setBounds(bottom.removeFromLeft(116));
+        bottom.removeFromLeft(10);
+        noteHighLabel_.setBounds(bottom.removeFromLeft(34));
+        noteHigh_.setBounds(bottom.removeFromLeft(116));
+        bottom.removeFromLeft(10);
+        voicesLabel_.setBounds(bottom.removeFromLeft(44));
+        voices_.setBounds(bottom.removeFromLeft(116));
     }
     auto layoutKnobs = [](std::vector<std::unique_ptr<ParamKnob>>& knobs, juce::Rectangle<int> area, int width) {
         for (auto& k : knobs) k->setBounds(area.removeFromLeft(width).reduced(2, 0));
