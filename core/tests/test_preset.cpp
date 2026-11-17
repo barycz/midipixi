@@ -61,6 +61,30 @@ TEST_CASE("preset: JSON round trip is lossless") {
     CHECK(std::strcmp(q.layers[1].name, "Ünïcode \"name\"") == 0);
 }
 
+TEST_CASE("preset: JSON leaves out default values") {
+    Preset p;
+    p.addLayer(Layer{});
+    CHECK(toJson(p, false) == R"({"format":"midipixi/1","name":"Init","layers":[{"name":"Layer"}]})");
+
+    Layer& l = p.layers[0];
+    l.lfo[1].shape = LfoShape::Square;  // lfo1 stays default: written as {}
+    l.env[0].release = 1.0f;
+    l.emitter.hue = 0.5f;
+    p.macros[2].value = 0.5f;
+    std::string a = toJson(p, false);
+    CHECK(a.find(R"("lfos":[{},{"shape":"square"}])") != std::string::npos);
+    CHECK(a.find(R"("envs":[{"release":1}])") != std::string::npos);
+    CHECK(a.find(R"("emitter":{"hue":0.5})") != std::string::npos);
+    CHECK(a.find(R"("macros":[{},{},{"value":0.5}])") != std::string::npos);
+    Preset q;
+    REQUIRE(loadPreset(a, q));
+    CHECK(q.layers[0].lfo[1].shape == LfoShape::Square);
+    CHECK(q.layers[0].lfo[0].shape == LfoShape::Sine);
+    CHECK(q.layers[0].env[0].release == 1.0f);
+    CHECK(std::strcmp(q.macros[2].name, "Macro 3") == 0 && q.macros[2].cc == 22);
+    CHECK(toJson(q, false) == a);
+}
+
 TEST_CASE("preset: missing fields use defaults, bad names are errors") {
     Preset p;
     std::string err;

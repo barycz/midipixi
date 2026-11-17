@@ -5,6 +5,11 @@ over the USB serial link and in the gear's flash. Missing fields take the
 defaults below; unknown fields are ignored; unknown *names* (blend modes,
 sources, destinations, …) are errors.
 
+midipixi writes only the values that differ from their defaults. `envs`,
+`lfos` and `macros` are positional arrays: a default entry before a changed one
+is written as `{}`, trailing default entries and all-default arrays are left
+out.
+
 ```json
 {
   "format": "midipixi/1",

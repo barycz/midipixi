@@ -24,72 +24,122 @@ int inum(const JsonDoc& d, int obj, const char* key, int def, int lo, int hi) {
     return i < lo ? lo : (i > hi ? hi : i);
 }
 
+// Writers leave out every field that equals its default: the readers start
+// from default-constructed structs, so the round trip is unchanged.
+template <typename T>
+void opt(JsonWriter& w, const char* key, T v, T def) {
+    if (v != def) w.field(key, v);
+}
+
+void optName(JsonWriter& w, const char* key, const char* v, const char* def) {
+    if (std::strcmp(v, def) != 0) w.field(key, v);
+}
+
 void writeEmitter(const EmitterParams& e, JsonWriter& w) {
-    w.beginObject();
-    w.field("position", e.position);
-    w.field("width", e.width);
-    w.field("softness", e.softness);
-    w.field("hue", e.hue);
-    w.field("saturation", e.saturation);
-    w.field("brightness", e.brightness);
-    w.field("hueSpread", e.hueSpread);
+    const EmitterParams d;
+    bool any = e.position != d.position || e.width != d.width || e.softness != d.softness || e.hue != d.hue ||
+               e.saturation != d.saturation || e.brightness != d.brightness || e.hueSpread != d.hueSpread;
+    if (!any) return;
+    w.key("emitter").beginObject();
+    opt(w, "position", e.position, d.position);
+    opt(w, "width", e.width, d.width);
+    opt(w, "softness", e.softness, d.softness);
+    opt(w, "hue", e.hue, d.hue);
+    opt(w, "saturation", e.saturation, d.saturation);
+    opt(w, "brightness", e.brightness, d.brightness);
+    opt(w, "hueSpread", e.hueSpread, d.hueSpread);
     w.endObject();
 }
 
+bool isDefault(const EnvParams& e) {
+    const EnvParams d;
+    return e.attack == d.attack && e.decay == d.decay && e.sustain == d.sustain && e.release == d.release;
+}
+
+bool isDefault(const LfoParams& o) {
+    const LfoParams d;
+    return o.shape == d.shape && o.rate == d.rate && o.sync == d.sync && o.beats == d.beats &&
+           o.retrigger == d.retrigger && o.oneShot == d.oneShot && o.phase == d.phase && o.bipolar == d.bipolar;
+}
+
+bool isDefault(const Macro& m, int index) {
+    const Preset d;
+    const Macro& dm = d.macros[index];
+    return std::strcmp(m.name, dm.name) == 0 && m.value == dm.value && m.cc == dm.cc;
+}
+
+// Arrays are positional: elements up to the last non-default one are written,
+// default ones as {}. All default: the key is left out.
+template <typename T, int N, typename IsDefault, typename Write>
+void writeArray(JsonWriter& w, const char* key, const T (&items)[N], IsDefault isDef, Write write) {
+    int last = -1;
+    for (int i = 0; i < N; ++i)
+        if (!isDef(items[i], i)) last = i;
+    if (last < 0) return;
+    w.key(key).beginArray();
+    for (int i = 0; i <= last; ++i) {
+        w.beginObject();
+        write(items[i], i);
+        w.endObject();
+    }
+    w.endArray();
+}
+
 void writeLayer(const Layer& l, JsonWriter& w) {
+    const Layer d;
     char buf[24];
     w.beginObject();
     w.field("name", static_cast<const char*>(l.name));
-    w.field("enabled", l.enabled);
-    w.field("trigger", toString(l.trigger));
-    w.field("channel", static_cast<int>(l.channel));
-    w.key("noteRange").beginArray().value(static_cast<int>(l.noteLow)).value(static_cast<int>(l.noteHigh)).endArray();
-    w.field("voices", static_cast<int>(l.voices));
-    w.field("wrap", l.wrap);
-    if (l.stack) w.field("stack", true);
+    opt(w, "enabled", l.enabled, d.enabled);
+    if (l.trigger != d.trigger) w.field("trigger", toString(l.trigger));
+    opt(w, "channel", static_cast<int>(l.channel), static_cast<int>(d.channel));
+    if (l.noteLow != d.noteLow || l.noteHigh != d.noteHigh)
+        w.key("noteRange").beginArray().value(static_cast<int>(l.noteLow)).value(static_cast<int>(l.noteHigh)).endArray();
+    opt(w, "voices", static_cast<int>(l.voices), static_cast<int>(d.voices));
+    opt(w, "wrap", l.wrap, d.wrap);
+    opt(w, "stack", l.stack, d.stack);
     if (l.glide > 0.0f) {
         w.field("glide", l.glide);
-        w.field("glideMode", toString(l.glideMode));
+        if (l.glideMode != d.glideMode) w.field("glideMode", toString(l.glideMode));
     }
-    w.field("blend", toString(l.blend));
-    w.field("opacity", l.opacity);
-    w.key("emitter");
+    if (l.blend != d.blend) w.field("blend", toString(l.blend));
+    opt(w, "opacity", l.opacity, d.opacity);
     writeEmitter(l.emitter, w);
-    w.key("envs").beginArray();
-    for (const EnvParams& e : l.env) {
-        w.beginObject();
-        w.field("attack", e.attack);
-        w.field("decay", e.decay);
-        w.field("sustain", e.sustain);
-        w.field("release", e.release);
-        w.endObject();
+    writeArray(
+        w, "envs", l.env, [](const EnvParams& e, int) { return isDefault(e); },
+        [&w](const EnvParams& e, int) {
+            const EnvParams de;
+            opt(w, "attack", e.attack, de.attack);
+            opt(w, "decay", e.decay, de.decay);
+            opt(w, "sustain", e.sustain, de.sustain);
+            opt(w, "release", e.release, de.release);
+        });
+    writeArray(
+        w, "lfos", l.lfo, [](const LfoParams& o, int) { return isDefault(o); },
+        [&w](const LfoParams& o, int) {
+            const LfoParams dl;
+            if (o.shape != dl.shape) w.field("shape", toString(o.shape));
+            opt(w, "rate", o.rate, dl.rate);
+            opt(w, "sync", o.sync, dl.sync);
+            opt(w, "beats", o.beats, dl.beats);
+            opt(w, "retrigger", o.retrigger, dl.retrigger);
+            opt(w, "oneShot", o.oneShot, dl.oneShot);
+            opt(w, "phase", o.phase, dl.phase);
+            opt(w, "bipolar", o.bipolar, dl.bipolar);
+        });
+    if (l.modCount > 0) {
+        w.key("mods").beginArray();
+        for (int i = 0; i < l.modCount; ++i) {
+            const ModRow& m = l.mods[i];
+            w.beginObject();
+            w.field("source", static_cast<const char*>(toString(m.source, buf, sizeof(buf))));
+            if (!m.via.isNone()) w.field("via", static_cast<const char*>(toString(m.via, buf, sizeof(buf))));
+            w.field("dest", toString(m.dest));
+            w.field("amount", m.amount);
+            w.endObject();
+        }
+        w.endArray();
     }
-    w.endArray();
-    w.key("lfos").beginArray();
-    for (const LfoParams& o : l.lfo) {
-        w.beginObject();
-        w.field("shape", toString(o.shape));
-        w.field("rate", o.rate);
-        w.field("sync", o.sync);
-        w.field("beats", o.beats);
-        w.field("retrigger", o.retrigger);
-        if (o.oneShot) w.field("oneShot", true);
-        w.field("phase", o.phase);
-        w.field("bipolar", o.bipolar);
-        w.endObject();
-    }
-    w.endArray();
-    w.key("mods").beginArray();
-    for (int i = 0; i < l.modCount; ++i) {
-        const ModRow& m = l.mods[i];
-        w.beginObject();
-        w.field("source", static_cast<const char*>(toString(m.source, buf, sizeof(buf))));
-        if (!m.via.isNone()) w.field("via", static_cast<const char*>(toString(m.via, buf, sizeof(buf))));
-        w.field("dest", toString(m.dest));
-        w.field("amount", m.amount);
-        w.endObject();
-    }
-    w.endArray();
     w.endObject();
 }
 
@@ -216,18 +266,20 @@ void writePreset(const Preset& p, JsonWriter& w) {
     w.field("format", kPresetFormat);
     w.field("name", static_cast<const char*>(p.name));
     if (p.author[0]) w.field("author", static_cast<const char*>(p.author));
-    w.key("macros").beginArray();
-    for (const Macro& m : p.macros) {
-        w.beginObject();
-        w.field("name", static_cast<const char*>(m.name));
-        w.field("value", m.value);
-        if (m.cc <= 127)
-            w.field("cc", static_cast<int>(m.cc));
-        else
-            w.key("cc").null();
-        w.endObject();
-    }
-    w.endArray();
+    writeArray(
+        w, "macros", p.macros, [](const Macro& m, int i) { return isDefault(m, i); },
+        [&w](const Macro& m, int i) {
+            const Preset d;
+            const Macro& dm = d.macros[i];
+            optName(w, "name", m.name, dm.name);
+            opt(w, "value", m.value, dm.value);
+            if (m.cc != dm.cc) {
+                if (m.cc <= 127)
+                    w.field("cc", static_cast<int>(m.cc));
+                else
+                    w.key("cc").null();
+            }
+        });
     w.key("layers").beginArray();
     for (int i = 0; i < p.layerCount; ++i) writeLayer(p.layers[i], w);
     w.endArray();
