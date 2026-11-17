@@ -36,6 +36,8 @@ struct Voice {
     bool sustained = false;  // key released while the sustain pedal is down
     uint8_t note = 0;
     uint8_t channel = 0;
+    float pitch = 0.0f;      // note as seen by the `note` source; glides towards `note` (legato)
+    float glideRate = 0.0f;  // semitones per second, 0 = not gliding
     float velocity = 0.0f;
     float aftertouch = 0.0f;
     float random = 0.0f;
@@ -116,6 +118,7 @@ private:
     bool acceptsNote(const Layer& l, int channel, int note) const;
     Voice* allocVoice(int layerIndex, int channel, int note);
     void startVoice(int layerIndex, Voice& v, int channel, int note, float velocity, bool retrigger);
+    void beginGlide(const Layer& l, Voice& v) const;
     void releaseVoice(Voice& v);
     void monoNoteOn(int li, int channel, int note, float velocity);
     void monoNoteOff(int li, int channel, int note);

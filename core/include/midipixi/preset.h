@@ -9,7 +9,9 @@
 
 namespace mpx {
 
-enum class TriggerMode : uint8_t { Poly, Mono, Drone, Count };
+enum class TriggerMode : uint8_t { Poly, Mono, Legato, Drone, Count };
+// Glide time: fixed for any interval, or per octave (wider jumps take longer).
+enum class GlideMode : uint8_t { Time, Octave, Count };
 
 enum class BlendMode : uint8_t {
     Add,
@@ -130,6 +132,8 @@ struct Layer {
     uint8_t voices = 8;   // 1..kMaxVoices (poly mode)
     bool wrap = false;    // positions wrap around the strip ends
     bool stack = false;   // poly: repeating a sounding note starts another voice instead of retriggering it
+    float glide = 0.0f;   // legato: seconds to slide the note source to an overlapping note (0 = jump)
+    GlideMode glideMode = GlideMode::Time;
     BlendMode blend = BlendMode::Add;
     float opacity = 1.0f;
     EmitterParams emitter;
@@ -174,6 +178,7 @@ void copyName(char* dst, size_t cap, const char* src);
 // --- string names (used by JSON and UIs) -----------------------------------
 
 const char* toString(TriggerMode m);
+const char* toString(GlideMode m);
 const char* toString(BlendMode m);
 const char* toString(LfoShape s);
 const char* toString(Dest d);
@@ -182,6 +187,7 @@ const char* toString(ModSource s, char* buf, size_t cap);
 const char* sourceTypeName(SourceType t);  // "cc", "macro", "env1", ...
 
 bool parseTriggerMode(const char* s, TriggerMode& out);
+bool parseGlideMode(const char* s, GlideMode& out);
 bool parseBlendMode(const char* s, BlendMode& out);
 bool parseLfoShape(const char* s, LfoShape& out);
 bool parseDest(const char* s, Dest& out);

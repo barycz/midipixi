@@ -65,7 +65,9 @@ keeps working if the plugin window closes or the DAW's audio stutters.
 ### Trigger modes
 
 - `poly` — one voice per note (up to `voices`, oldest released voice is stolen first).
-- `mono` — one voice, last-note priority, legato note changes.
+- `mono` — one voice, last-note priority; every note change restarts its envelopes and LFOs.
+- `legato` — one voice, last-note priority; overlapping notes only move the note (optional glide), a
+  note after all keys were released starts fresh.
 - `drone` — one voice that is always on; notes are ignored (ambience layers).
 
 Each layer has a MIDI channel filter (0 = omni) and a key zone (`noteRange`).

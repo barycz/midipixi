@@ -266,29 +266,104 @@ TEST_CASE("engine: voice stealing prefers released voices") {
     CHECK(e.activeVoices(0) == 0);
 }
 
-TEST_CASE("engine: mono layer is legato with last-note priority") {
+namespace {
+
+// One init layer (env1: a 5 ms, d 0.4 s, s 60 %, r 0.3 s) over the full key range,
+// one LED per note.
+Engine& monoEngine(Engine& e, TriggerMode mode, float glide = 0.0f, GlideMode gm = GlideMode::Time) {
     Preset p;
     Layer l = makeInitLayer();
-    l.trigger = TriggerMode::Mono;
+    l.trigger = mode;
     l.noteLow = 0;
     l.noteHigh = 127;
+    l.glide = glide;
+    l.glideMode = gm;
     p.addLayer(l);
-    Engine e;
     e.setPreset(p);
     e.setPixelCount(128);
+    return e;
+}
+
+}  // namespace
+
+TEST_CASE("engine: mono and legato use one voice with last-note priority") {
+    for (TriggerMode mode : {TriggerMode::Mono, TriggerMode::Legato}) {
+        Engine e;
+        monoEngine(e, mode);
+        e.noteOn(0, 10, 100);
+        run(e, 0.05f);
+        CHECK(brightest(e) == 10);
+        e.noteOn(0, 100, 100);
+        run(e, 0.01f);
+        CHECK(brightest(e) == 100);
+        CHECK(e.activeVoices(0) == 1);
+        e.noteOff(0, 100);
+        run(e, 0.01f);
+        CHECK(brightest(e) == 10);
+        e.noteOff(0, 10);
+        run(e, 2.0f);
+        CHECK(e.activeVoices(0) == 0);
+    }
+}
+
+TEST_CASE("engine: mono retriggers envelopes on every note, legato does not") {
+    Engine mono, legato;
+    monoEngine(mono, TriggerMode::Mono);
+    monoEngine(legato, TriggerMode::Legato);
+    for (Engine* e : {&mono, &legato}) {
+        e->noteOn(0, 10, 100);
+        run(*e, 1.0f);  // settled at sustain (60 %)
+        e->noteOn(0, 100, 100);
+        run(*e, 0.01f);
+    }
+    CHECK(lum(mono.pixels()[100]) > 0.9f);  // new attack
+    CHECK(std::abs(lum(legato.pixels()[100]) - 0.6f) < 0.05f);  // still sustaining
+
+    // Returning to a held note: mono attacks again, legato keeps going.
+    for (Engine* e : {&mono, &legato}) {
+        run(*e, 1.0f);
+        e->noteOff(0, 100);
+        run(*e, 0.01f);
+    }
+    CHECK(lum(mono.pixels()[10]) > 0.9f);
+    CHECK(std::abs(lum(legato.pixels()[10]) - 0.6f) < 0.05f);
+
+    // Legato: a note after all keys are released starts fresh.
+    legato.noteOff(0, 10);
+    run(legato, 0.05f);
+    legato.noteOn(0, 50, 100);
+    run(legato, 0.01f);
+    CHECK(lum(legato.pixels()[50]) > 0.9f);
+}
+
+TEST_CASE("engine: legato glide moves the note source over time") {
+    Engine e;
+    monoEngine(e, TriggerMode::Legato, 1.0f);
     e.noteOn(0, 10, 100);
-    run(e, 0.05f);
-    CHECK(brightest(e) == 10);
+    run(e, 0.1f);
     e.noteOn(0, 100, 100);
-    run(e, 0.01f);
+    run(e, 0.5f);
+    CHECK(std::abs(brightest(e) - 55) <= 2);  // halfway
+    run(e, 0.6f);
     CHECK(brightest(e) == 100);
-    CHECK(e.activeVoices(0) == 1);
-    e.noteOff(0, 100);
-    run(e, 0.01f);
-    CHECK(brightest(e) == 10);
-    e.noteOff(0, 10);
-    run(e, 2.0f);
-    CHECK(e.activeVoices(0) == 0);
+
+    // Per octave: 0.1 s per octave, 90 semitones = 0.75 s.
+    Engine o;
+    monoEngine(o, TriggerMode::Legato, 0.1f, GlideMode::Octave);
+    o.noteOn(0, 10, 100);
+    run(o, 0.1f);
+    o.noteOn(0, 100, 100);
+    run(o, 0.375f);
+    CHECK(std::abs(brightest(o) - 55) <= 2);
+
+    // No glide in mono mode, nor on a fresh legato note.
+    Engine m;
+    monoEngine(m, TriggerMode::Mono, 1.0f);
+    m.noteOn(0, 10, 100);
+    run(m, 0.1f);
+    m.noteOn(0, 100, 100);
+    run(m, 0.01f);
+    CHECK(brightest(m) == 100);
 }
 
 TEST_CASE("engine: sustain pedal holds notes") {

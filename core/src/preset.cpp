@@ -7,7 +7,8 @@ namespace mpx {
 
 namespace {
 
-const char* const kTriggerNames[] = {"poly", "mono", "drone"};
+const char* const kTriggerNames[] = {"poly", "mono", "legato", "drone"};
+const char* const kGlideNames[] = {"time", "octave"};
 const char* const kBlendNames[] = {"add",     "screen", "multiply",   "subtract", "lighten", "darken",
                                    "difference", "normal", "hue", "hueshift", "mask"};
 const char* const kBlendLabels[] = {"Add",        "Screen", "Multiply", "Subtract",  "Lighten", "Darken",
@@ -26,6 +27,7 @@ const char* const kDestLabels[] = {"Position",     "Width",        "Softness",  
                                    "Env 2 attack", "Env 2 decay",  "Env 2 sustain", "Env 2 release"};
 
 static_assert(sizeof(kTriggerNames) / sizeof(kTriggerNames[0]) == static_cast<size_t>(TriggerMode::Count), "");
+static_assert(sizeof(kGlideNames) / sizeof(kGlideNames[0]) == static_cast<size_t>(GlideMode::Count), "");
 static_assert(sizeof(kBlendNames) / sizeof(kBlendNames[0]) == static_cast<size_t>(BlendMode::Count), "");
 static_assert(sizeof(kBlendLabels) / sizeof(kBlendLabels[0]) == static_cast<size_t>(BlendMode::Count), "");
 static_assert(sizeof(kShapeNames) / sizeof(kShapeNames[0]) == static_cast<size_t>(LfoShape::Count), "");
@@ -146,6 +148,7 @@ Preset makeInitPreset() {
 }
 
 const char* toString(TriggerMode m) { return enumName(m, kTriggerNames); }
+const char* toString(GlideMode m) { return enumName(m, kGlideNames); }
 const char* toString(BlendMode m) { return enumName(m, kBlendNames); }
 const char* toString(LfoShape s) { return enumName(s, kShapeNames); }
 const char* toString(Dest d) { return enumName(d, kDestNames); }
@@ -165,6 +168,7 @@ const char* toString(ModSource s, char* buf, size_t cap) {
 }
 
 bool parseTriggerMode(const char* s, TriggerMode& out) { return parseEnum(s, kTriggerNames, out); }
+bool parseGlideMode(const char* s, GlideMode& out) { return parseEnum(s, kGlideNames, out); }
 bool parseBlendMode(const char* s, BlendMode& out) { return parseEnum(s, kBlendNames, out); }
 bool parseLfoShape(const char* s, LfoShape& out) { return parseEnum(s, kShapeNames, out); }
 bool parseDest(const char* s, Dest& out) { return parseEnum(s, kDestNames, out); }

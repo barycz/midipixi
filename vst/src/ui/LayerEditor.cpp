@@ -49,13 +49,17 @@ LayerEditor::LayerEditor(MidipixiProcessor& p) : proc_(p) {
         edited();
     };
 
-    trigger_.addItemList({"Poly", "Mono", "Drone"}, 1);
+    trigger_.addItemList({"Poly", "Mono", "Legato", "Drone"}, 1);
     trigger_.onChange = [this] {
         if (updating_) return;
         layer().trigger = static_cast<mpx::TriggerMode>(trigger_.getSelectedItemIndex());
         edited();
+        refresh();
     };
-    trigger_.setTooltip("Poly: a voice per note. Mono: one legato voice. Drone: always on, ignores notes.");
+    trigger_.setTooltip("Poly: a voice per note.\n"
+                        "Mono: one voice, every note restarts envelopes and LFOs.\n"
+                        "Legato: one voice, overlapping notes only move it (with glide).\n"
+                        "Drone: always on, ignores notes.");
     addAndMakeVisible(trigger_);
 
     channel_.addItem("Omni", 1);
@@ -128,6 +132,15 @@ LayerEditor::LayerEditor(MidipixiProcessor& p) : proc_(p) {
     stack_.setTooltip("Repeating a note that is still sounding starts another emitter instead of restarting it "
                       "(e.g. rapid laser shots)");
     addAndMakeVisible(stack_);
+    glideMode_.addItemList({"Fixed time", "Per octave"}, 1);
+    glideMode_.setTooltip("Fixed time: every glide takes the Glide time.\n"
+                          "Per octave: the Glide time is per octave, so wider jumps take longer.");
+    glideMode_.onChange = [this] {
+        if (updating_) return;
+        layer().glideMode = static_cast<mpx::GlideMode>(glideMode_.getSelectedItemIndex());
+        edited();
+    };
+    addAndMakeVisible(glideMode_);
 
     for (int k = 0; k < mpx::kNumLfos; ++k) {
         for (int s = 0; s < static_cast<int>(mpx::LfoShape::Count); ++s) {
@@ -213,6 +226,7 @@ void LayerEditor::build() {
     for (auto& v : lfoKnobs_) v.clear();
 
     make(layerKnobs_, "Opacity", 0, 1, 1, [this]() -> float& { return layer().opacity; }, fmt::percent, 0, D::Opacity);
+    make(layerKnobs_, "Glide", 0, 5, 0, [this]() -> float& { return layer().glide; }, fmt::seconds, 0.3);
 
     make(emitterKnobs_, "Position", 0, 1, 0.5, [this]() -> float& { return layer().emitter.position; }, fmt::percent, 0, D::Position);
     make(emitterKnobs_, "Width", 0, 1, 0, [this]() -> float& { return layer().emitter.width; }, fmt::percent, 0.1, D::Width);
@@ -264,6 +278,10 @@ void LayerEditor::refresh() {
     wrap_.setToggleState(l.wrap, juce::dontSendNotification);
     stack_.setToggleState(l.stack, juce::dontSendNotification);
     stack_.setEnabled(l.trigger == mpx::TriggerMode::Poly);
+    const bool legato = l.trigger == mpx::TriggerMode::Legato;
+    glideMode_.setSelectedItemIndex(static_cast<int>(l.glideMode), juce::dontSendNotification);
+    glideMode_.setEnabled(legato);
+    if (layerKnobs_.size() > 1) layerKnobs_[1]->setEnabled(legato);
     for (int k = 0; k < mpx::kNumLfos; ++k) {
         const auto& o = l.lfo[k];
         lfoShape_[k].setSelectedId(static_cast<int>(o.shape) + 1, juce::dontSendNotification);
@@ -343,8 +361,11 @@ void LayerEditor::resized() {
         voices_.setBounds(bottom.removeFromLeft(100));
         bottom.removeFromLeft(10);
         stack_.setBounds(bottom.removeFromLeft(70));
-        auto knobArea = content(secLayer_).removeFromRight(70);
-        if (!layerKnobs_.empty()) layerKnobs_[0]->setBounds(knobArea);
+        bottom.removeFromLeft(10);
+        glideMode_.setBounds(bottom.removeFromLeft(110));
+        auto knobArea = content(secLayer_).removeFromRight(140);
+        if (layerKnobs_.size() > 0) layerKnobs_[0]->setBounds(knobArea.removeFromRight(70));
+        if (layerKnobs_.size() > 1) layerKnobs_[1]->setBounds(knobArea);
     }
     auto layoutKnobs = [](std::vector<std::unique_ptr<ParamKnob>>& knobs, juce::Rectangle<int> area, int width) {
         for (auto& k : knobs) k->setBounds(area.removeFromLeft(width).reduced(2, 0));

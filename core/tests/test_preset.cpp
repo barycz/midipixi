@@ -31,7 +31,9 @@ TEST_CASE("preset: source and destination names round trip") {
 TEST_CASE("preset: JSON round trip is lossless") {
     Preset p = makeInitPreset();
     Layer l = makeInitLayer();
-    l.trigger = TriggerMode::Mono;
+    l.trigger = TriggerMode::Legato;
+    l.glide = 0.25f;
+    l.glideMode = GlideMode::Octave;
     l.blend = BlendMode::HueShift;
     l.channel = 10;
     l.noteLow = 40;
@@ -54,6 +56,8 @@ TEST_CASE("preset: JSON round trip is lossless") {
     CHECK(q.layerCount == 2);
     CHECK(q.layers[1].mods[2].via.type == SourceType::Velocity);
     CHECK(q.macros[3].cc == 255);
+    CHECK(q.layers[1].trigger == TriggerMode::Legato);
+    CHECK(q.layers[1].glideMode == GlideMode::Octave);
     CHECK(std::strcmp(q.layers[1].name, "Ünïcode \"name\"") == 0);
 }
 

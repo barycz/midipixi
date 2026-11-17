@@ -47,6 +47,10 @@ void writeLayer(const Layer& l, JsonWriter& w) {
     w.field("voices", static_cast<int>(l.voices));
     w.field("wrap", l.wrap);
     if (l.stack) w.field("stack", true);
+    if (l.glide > 0.0f) {
+        w.field("glide", l.glide);
+        w.field("glideMode", toString(l.glideMode));
+    }
     w.field("blend", toString(l.blend));
     w.field("opacity", l.opacity);
     w.key("emitter");
@@ -115,6 +119,9 @@ bool readLayer(const JsonDoc& d, int obj, Layer& l, char* err, size_t errCap) {
     l.enabled = d.getBool(obj, "enabled", l.enabled);
     if (!readEnum(d, obj, "trigger", err, errCap, parseThunk<TriggerMode, parseTriggerMode>, &l.trigger)) return false;
     if (!readEnum(d, obj, "blend", err, errCap, parseThunk<BlendMode, parseBlendMode>, &l.blend)) return false;
+    if (!readEnum(d, obj, "glideMode", err, errCap, parseThunk<GlideMode, parseGlideMode>, &l.glideMode)) return false;
+    l.glide = num(d, obj, "glide", l.glide);
+    if (l.glide < 0.0f) l.glide = 0.0f;
     l.channel = static_cast<uint8_t>(inum(d, obj, "channel", l.channel, 0, 16));
     int range = d.find(obj, "noteRange");
     if (range >= 0) {

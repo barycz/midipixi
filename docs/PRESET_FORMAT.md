@@ -47,11 +47,13 @@ sources, destinations, …) are errors.
 
 | Field | Default | Notes |
 |---|---|---|
-| `trigger` | `"poly"` | `poly`, `mono` (legato, last-note priority), `drone` (one always-on voice, notes ignored) |
+| `trigger` | `"poly"` | `poly` (a voice per note), `mono` (one voice, last-note priority; every note change restarts envelopes and per-voice LFOs), `legato` (one voice, last-note priority; overlapping notes only move the note, with `glide`), `drone` (one always-on voice, notes ignored) |
 | `channel` | `0` | 0 = omni, 1–16 |
 | `noteRange` | `[0, 127]` | Key zone. Also defines the `note` source: low note = 0, high note = 1. |
 | `voices` | `8` | 1–16 (poly) |
 | `wrap` | `false` | Positions wrap around the strip ends (rings, loops). |
+| `glide` | 0 | Legato only. Seconds for the `note` source to slide to an overlapping note (0 = jump). |
+| `glideMode` | `"time"` | `time`: every glide takes `glide` seconds. `octave`: `glide` seconds per octave, so wider jumps take longer. |
 | `stack` | `false` | Poly only. `true`: playing a note that is still sounding (held or releasing) starts another voice; each note-off releases the oldest held one. `false`: the sounding voice is retriggered. Use it with one-shot LFOs so rapid repeats send several emitters. |
 | `blend` | `"add"` | `add`, `screen`, `multiply`, `subtract`, `lighten`, `darken`, `difference`, `normal`, `hue`, `hueshift`, `mask` |
 | `opacity` | `1` | 0–1, modulatable (`opacity`) |

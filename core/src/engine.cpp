@@ -119,6 +119,8 @@ void Engine::startVoice(int layerIndex, Voice& v, int channel, int note, float v
     v.random = randomUnit();
     v.serial = ++serial_;
     if (!retrigger) return;
+    v.pitch = static_cast<float>(note);
+    v.glideRate = 0.0f;
     for (int e = 0; e < kNumEnvs; ++e) {
         v.envEff[e] = l.env[e];
         v.env[e].stage = EnvState::Attack;
@@ -171,7 +173,22 @@ Voice* Engine::allocVoice(int layerIndex, int channel, int note) {
     return best;
 }
 
+void Engine::beginGlide(const Layer& l, Voice& v) const {
+    float distance = std::fabs(static_cast<float>(v.note) - v.pitch);
+    float time = l.glideMode == GlideMode::Octave ? l.glide * distance / 12.0f : l.glide;
+    if (time <= 0.0f || distance <= 0.0f) {
+        v.pitch = static_cast<float>(v.note);
+        v.glideRate = 0.0f;
+        return;
+    }
+    v.glideRate = distance / time;
+}
+
+// Mono: every note change restarts envelopes and per-voice LFOs.
+// Legato: overlapping notes only move the note (with glide); a note played
+// after all keys were released starts fresh.
 void Engine::monoNoteOn(int li, int channel, int note, float velocity) {
+    const Layer& l = preset_.layers[li];
     LayerState& ls = layers_[li];
     // Move note to the top of the stack.
     int n = 0;
@@ -184,11 +201,13 @@ void Engine::monoNoteOn(int li, int channel, int note, float velocity) {
     ls.monoStack[n++] = static_cast<uint8_t>(note);
     ls.monoCount = static_cast<uint8_t>(n);
     Voice& v = ls.voices[0];
-    bool legato = v.active && v.gate;
+    bool legato = l.trigger == TriggerMode::Legato && v.active && v.gate;
     startVoice(li, v, channel, note, legato ? v.velocity : velocity, !legato);
+    if (legato) beginGlide(l, v);
 }
 
 void Engine::monoNoteOff(int li, int channel, int note) {
+    const Layer& l = preset_.layers[li];
     LayerState& ls = layers_[li];
     int n = 0;
     for (int i = 0; i < ls.monoCount; ++i)
@@ -197,9 +216,14 @@ void Engine::monoNoteOff(int li, int channel, int note) {
     Voice& v = ls.voices[0];
     if (!v.active || v.note != note) return;
     if (n > 0) {
-        // Legato back to the previously held note.
-        v.note = ls.monoStack[n - 1];
-        v.channel = static_cast<uint8_t>(channel);
+        // Back to the previously held note.
+        if (l.trigger == TriggerMode::Legato) {
+            v.note = ls.monoStack[n - 1];
+            v.channel = static_cast<uint8_t>(channel);
+            beginGlide(l, v);
+        } else {
+            startVoice(li, v, channel, ls.monoStack[n - 1], v.velocity, true);
+        }
     } else if (sustainPedal_) {
         v.sustained = true;
     } else {
@@ -217,7 +241,7 @@ void Engine::noteOn(int channel, int note, int velocity) {
         const Layer& l = preset_.layers[i];
         if (!acceptsNote(l, channel, note)) continue;
         if (l.trigger == TriggerMode::Drone) continue;
-        if (l.trigger == TriggerMode::Mono) {
+        if (l.trigger == TriggerMode::Mono || l.trigger == TriggerMode::Legato) {
             monoNoteOn(i, channel, note, vel);
             continue;
         }
@@ -230,7 +254,7 @@ void Engine::noteOff(int channel, int note) {
         const Layer& l = preset_.layers[i];
         if (l.trigger == TriggerMode::Drone) continue;
         if (l.channel != 0 && l.channel != channel + 1) continue;
-        if (l.trigger == TriggerMode::Mono) {
+        if (l.trigger == TriggerMode::Mono || l.trigger == TriggerMode::Legato) {
             monoNoteOff(i, channel, note);
             continue;
         }
@@ -495,6 +519,16 @@ void Engine::advance(float dt) {
         for (Voice& v : ls.voices) {
             if (!v.active) continue;
             for (int e = 0; e < kNumEnvs; ++e) advanceEnv(v.env[e], v.envEff[e], dt);
+            if (v.glideRate > 0.0f) {
+                float target = static_cast<float>(v.note);
+                float step = v.glideRate * dt;
+                if (std::fabs(target - v.pitch) <= step) {
+                    v.pitch = target;
+                    v.glideRate = 0.0f;
+                } else {
+                    v.pitch += target > v.pitch ? step : -step;
+                }
+            }
             for (int k2 = 0; k2 < kNumLfos; ++k2)
                 if (isPerVoice(l.lfo[k2])) advanceLfo(v.lfo[k2], l.lfo[k2], v.lfoRate[k2], dt, false);
             if (!v.gate && v.env[0].stage == EnvState::Idle) v.active = false;
@@ -511,7 +545,7 @@ float Engine::sourceValue(const Layer& l, const LayerState& ls, const Voice* v, 
         case SourceType::Note: {
             if (!v) return 0.0f;
             int span = l.noteHigh - l.noteLow;
-            return span > 0 ? clamp01(static_cast<float>(v->note - l.noteLow) / static_cast<float>(span)) : 0.0f;
+            return span > 0 ? clamp01((v->pitch - static_cast<float>(l.noteLow)) / static_cast<float>(span)) : 0.0f;
         }
         case SourceType::Velocity: return v ? v->velocity : 0.0f;
         case SourceType::Aftertouch: return v ? v->aftertouch : 0.0f;
