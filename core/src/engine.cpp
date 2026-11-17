@@ -125,6 +125,12 @@ void Engine::startVoice(int layerIndex, Voice& v, int channel, int note, float v
         v.envEff[e] = l.env[e];
         v.env[e].stage = EnvState::Attack;
         if (!wasActive) v.env[e].level = 0.0f;  // retriggering a playing voice attacks from its current level
+        if (v.envEff[e].attack <= 0.0f) {
+            // Instant attack: at full level right away, so a note-off arriving
+            // before the next frame (very short trigger notes) still releases from 1.
+            v.env[e].level = 1.0f;
+            v.env[e].stage = EnvState::Decay;
+        }
     }
     for (int k = 0; k < kNumLfos; ++k) {
         v.lfoRate[k] = baseLfoRate(l.lfo[k]);

@@ -6,12 +6,12 @@
     {
       "name": "Beam",
       "trigger": "poly",
-      "voices": 12,
+      "voices": 16,
       "stack": true,
       "noteRange": [36, 96],
-      "emitter": { "position": 0, "width": 0.02, "softness": 0.7, "hue": 0.95, "saturation": 1, "brightness": 0 },
+      "emitter": { "position": 0, "width": 0.02, "softness": 0.7, "hue": 0.95, "saturation": 1, "brightness": 1 },
       "envs": [
-        { "attack": 0.002, "decay": 0, "sustain": 1, "release": 0.15 },
+        { "attack": 0, "decay": 0, "sustain": 1, "release": 2 },
         { "attack": 0, "decay": 0, "sustain": 1, "release": 0 }
       ],
       "lfos": [
@@ -19,8 +19,8 @@
       ],
       "mods": [
         { "source": "lfo1", "dest": "position", "amount": 1 },
+        { "source": "lfo1", "dest": "position", "amount": 0.05 },
         { "source": "velocity", "dest": "lfo1.rate", "amount": 0.15 },
-        { "source": "env1", "dest": "brightness", "amount": 1 },
         { "source": "note", "dest": "hue", "amount": 0.3 }
       ]
     }

@@ -6,48 +6,46 @@
     {
       "name": "Right",
       "trigger": "poly",
-      "voices": 12,
+      "voices": 16,
       "stack": true,
       "noteRange": [36, 96],
       "blend": "add",
-      "emitter": { "position": 0.5, "width": 0.005, "softness": 0.8, "hue": 0.6, "saturation": 0.45, "brightness": 0 },
+      "emitter": { "position": 0.5, "width": 0.005, "softness": 0.8, "hue": 0.6, "saturation": 0.45, "brightness": 0.15 },
       "envs": [
-        { "attack": 0.005, "decay": 0, "sustain": 1, "release": 0.2 },
-        { "attack": 0.8, "decay": 0, "sustain": 1, "release": 0 }
+        { "attack": 0, "decay": 0, "sustain": 1, "release": 2.5 },
+        { "attack": 0, "decay": 0, "sustain": 1, "release": 0 }
       ],
       "lfos": [
-        { "shape": "sawup", "sync": true, "beats": 2, "retrigger": true, "oneShot": true, "phase": 0, "bipolar": false }
+        { "shape": "sawup", "sync": true, "beats": 4, "retrigger": true, "oneShot": true, "phase": 0, "bipolar": false }
       ],
       "mods": [
-        { "source": "lfo1", "dest": "position", "amount": 0.5 },
-        { "source": "env2", "dest": "lfo1.rate", "amount": 0.5 },
+        { "source": "lfo1", "dest": "position", "amount": 0.6 },
+        { "source": "lfo1", "dest": "lfo1.rate", "amount": 0.5 },
         { "source": "lfo1", "dest": "width", "amount": 0.04 },
-        { "source": "env1", "dest": "brightness", "amount": 0.85, "via": "lfo1" },
-        { "source": "env1", "dest": "brightness", "amount": 0.15 },
+        { "source": "lfo1", "dest": "brightness", "amount": 0.85 },
         { "source": "note", "dest": "hue", "amount": 0.3 }
       ]
     },
     {
       "name": "Left",
       "trigger": "poly",
-      "voices": 12,
+      "voices": 16,
       "stack": true,
       "noteRange": [36, 96],
       "blend": "add",
-      "emitter": { "position": 0.5, "width": 0.005, "softness": 0.8, "hue": 0.6, "saturation": 0.45, "brightness": 0 },
+      "emitter": { "position": 0.5, "width": 0.005, "softness": 0.8, "hue": 0.6, "saturation": 0.45, "brightness": 0.15 },
       "envs": [
-        { "attack": 0.005, "decay": 0, "sustain": 1, "release": 0.2 },
-        { "attack": 0.8, "decay": 0, "sustain": 1, "release": 0 }
+        { "attack": 0, "decay": 0, "sustain": 1, "release": 2.5 },
+        { "attack": 0, "decay": 0, "sustain": 1, "release": 0 }
       ],
       "lfos": [
-        { "shape": "sawup", "sync": true, "beats": 2, "retrigger": true, "oneShot": true, "phase": 0, "bipolar": false }
+        { "shape": "sawup", "sync": true, "beats": 4, "retrigger": true, "oneShot": true, "phase": 0, "bipolar": false }
       ],
       "mods": [
-        { "source": "lfo1", "dest": "position", "amount": -0.5 },
-        { "source": "env2", "dest": "lfo1.rate", "amount": 0.5 },
+        { "source": "lfo1", "dest": "position", "amount": -0.6 },
+        { "source": "lfo1", "dest": "lfo1.rate", "amount": 0.5 },
         { "source": "lfo1", "dest": "width", "amount": 0.04 },
-        { "source": "env1", "dest": "brightness", "amount": 0.85, "via": "lfo1" },
-        { "source": "env1", "dest": "brightness", "amount": 0.15 },
+        { "source": "lfo1", "dest": "brightness", "amount": 0.85 },
         { "source": "note", "dest": "hue", "amount": 0.3 }
       ]
     }

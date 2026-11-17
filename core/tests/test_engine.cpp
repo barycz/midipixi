@@ -133,8 +133,21 @@ TEST_CASE("engine: laser beam starts at the edge and sweeps the strip") {
     CHECK(p0 <= 2);
     CHECK(p0 < p1);
     CHECK(p1 < p2);
-    run(*e, 2.0f);  // one-shot LFO holds at the end of its cycle
-    CHECK(brightest(*e) == kN - 1);
+    run(*e, 2.0f);  // the beam has left the strip
+    CHECK(litCount(*e) == 0);
+}
+
+TEST_CASE("engine: a short laser note still crosses the whole strip") {
+    auto e = engineWith("laser.json");
+    e->noteOn(0, 60, 100);
+    run(*e, 0.05f);
+    e->noteOff(0, 60);
+    int last = 0;
+    for (int f = 0; f < 120; ++f) {
+        run(*e, 1.0f / 60.0f);
+        if (litCount(*e) > 0) last = brightest(*e);
+    }
+    CHECK(last == kN - 1);
 }
 
 TEST_CASE("engine: stacked layer sends a new laser shot on each repeat of a note") {
@@ -153,10 +166,10 @@ TEST_CASE("engine: stacked layer sends a new laser shot on each repeat of a note
     // Each note-off releases one held copy of the note (oldest first).
     e->noteOn(0, 60, 100);
     e->noteOff(0, 60);
-    run(*e, 1.0f);
+    run(*e, 2.5f);  // release (2 s) keeps a short shot alive until it has left the strip
     CHECK(e->activeVoices(0) == 1);
     e->noteOff(0, 60);
-    run(*e, 1.0f);
+    run(*e, 2.5f);
     CHECK(e->activeVoices(0) == 0);
 }
 
@@ -182,7 +195,8 @@ TEST_CASE("engine: stargate sends two accelerating stars out from the centre") {
         return best;
     };
     int left[3], right[3];
-    const float times[3] = {0.1f, 0.3f, 0.5f};
+    const float times[3] = {0.2f, 0.6f, 1.0f};
+    e->noteOff(0, 60);  // short note: the stars keep going
     float t = 0.0f;
     for (int k = 0; k < 3; ++k) {
         while (t < times[k]) {  // render every frame, like the plugin and the gear do
@@ -197,6 +211,15 @@ TEST_CASE("engine: stargate sends two accelerating stars out from the centre") {
     CHECK(right[0] < right[1]);
     CHECK(right[1] - right[0] < right[2] - right[1]);  // speeding up
     CHECK(left[0] > left[1]);
+}
+
+TEST_CASE("engine: a note-off before the next frame still plays an instant-attack note") {
+    auto e = engineWith("laser.json");  // attack 0, release 2 s
+    e->noteOn(0, 60, 100);
+    e->noteOff(0, 60);
+    run(*e, 0.1f);
+    CHECK(e->activeVoices(0) == 1);
+    CHECK(litCount(*e) > 0);
 }
 
 TEST_CASE("engine: one-shot LFO runs a single cycle per note, then holds") {
