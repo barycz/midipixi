@@ -60,6 +60,9 @@ void LedStripView::paint(juce::Graphics& g) {
 
     // Waterfall: newest row at the top
     if (!history_.empty()) {
+        // Black like an unlit LED, so dim values fade smoothly into it.
+        g.setColour(juce::Colours::black);
+        g.fillRect(waterfall.withX(stripArea.getX()).withWidth(stripArea.getWidth()));
         const float rowH = waterfall.getHeight() / static_cast<float>(kHistory);
         for (int r = 0; r < kHistory; ++r) {
             int idx = (historyPos_ - 1 - r + kHistory * 2) % kHistory;
@@ -68,7 +71,7 @@ void LedStripView::paint(juce::Graphics& g) {
             float fade = 1.0f - static_cast<float>(r) / static_cast<float>(kHistory);
             for (int i = 0; i < n && i < static_cast<int>(row.size()); ++i) {
                 const mpx::Rgb& p = row[static_cast<size_t>(i)];
-                if (mpx::maxChannel(p) <= 0.01f) continue;
+                if (mpx::maxChannel(p) <= 0.0f) continue;
                 g.setColour(colourOf(p).withMultipliedAlpha(0.35f + 0.65f * fade));
                 g.fillRect(stripArea.getX() + pitch * static_cast<float>(i), y, pitch, rowH + 0.5f);
             }
