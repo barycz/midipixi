@@ -21,3 +21,8 @@ endif()
 if(NOT MIDIPIXI_GEAR)
     set_target_properties(midipixi_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
+# RP2040: the per-pixel render path runs from RAM (see midipixi/hot.h).
+if(MIDIPIXI_GEAR AND PICO_RP2040)
+    target_compile_definitions(midipixi_core PRIVATE MPX_HOT_IN_RAM=1)
+endif()

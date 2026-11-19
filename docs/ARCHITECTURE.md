@@ -41,7 +41,7 @@ keeps working if the plugin window closes or the DAW's audio stutters.
 | Plugin framework | JUCE 8 (AGPLv3) | VST3 + standalone from one codebase; project is open source under AGPLv3. |
 | First target | Windows, VST3 | Other OSes and formats (AU, CLAP) later. |
 | Plugin type | Instrument with a silent stereo output | Several DAWs (e.g. Ableton) do not host VST MIDI effects. |
-| MCU | RP2350 (Pico 2), float math | Hardware FPU, so core uses plain `float` everywhere. RP2040 (Pico 1) build uses the SDK's ROM float routines; to be measured. |
+| MCU | RP2350 (Pico 2), float math | Hardware FPU, so core uses plain `float` everywhere. RP2040 (Pico 1) build uses the SDK's ROM float routines, runs at 200 MHz and keeps the per-pixel path in RAM; to be measured on hardware. |
 | LED output | WS2812 via PIO + DMA | Zero CPU time for the bitstream. |
 | Gear USB | Composite USB MIDI + CDC serial (TinyUSB) | Windows MIDI ports are often exclusive to one app (the DAW); a separate serial channel lets the editor talk to the gear while the DAW owns the MIDI port. |
 | Preset format | JSON, same bytes on PC, over the wire and in flash | Human readable, diffable, versioned (`"format": "midipixi/1"`). |
@@ -81,8 +81,13 @@ Every matrix row is `{source, via?, dest, amount}`. A row adds
 then clamped (hue wraps; position is unclamped so beams can leave the strip,
 or wraps if the layer has `wrap` on).
 
-Modulation is evaluated **per voice, per frame**. Only emitter rasterization
-runs per pixel. Modulator parameters (LFO rate, envelope times) can be
+Modulation is evaluated **per voice, per frame**. Rows whose source and via
+are both layer-wide (macros, CCs, pitch bend, pressure, beat, free-running
+LFOs) give the same value for every voice, so they are summed once per layer
+and frame; only rows reading a voice source run per voice. Only emitter
+rasterization runs per pixel, and blending only visits the LEDs the layer's
+voices lit (except `multiply`, `darken` and `mask`, which darken unlit LEDs).
+LFO waveforms nothing reads are not computed. Modulator parameters (LFO rate, envelope times) can be
 modulation targets; they use the previous frame's value (one-frame latency,
 standard practice).
 

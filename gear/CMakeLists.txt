@@ -24,6 +24,13 @@ target_compile_definitions(midipixi_gear PRIVATE
 
 target_compile_options(midipixi_gear PRIVATE -Wall -Wextra -Wno-unused-parameter)
 
+# RP2040 has no FPU: every float operation goes through the SDK's float
+# routines. Keep their entry points in RAM, next to the engine's hot path
+# (midipixi/hot.h), so they don't compete with core 0 for the XIP cache.
+if(PICO_RP2040)
+    target_compile_definitions(midipixi_gear PRIVATE PICO_FLOAT_IN_RAM=1)
+endif()
+
 target_link_libraries(midipixi_gear PRIVATE
     midipixi_core
     pico_stdlib

@@ -70,6 +70,16 @@ scripts\dev.cmd cmake --build --preset pico
 ```
 
 The RP2040 has no FPU. The engine's `float` math goes through the SDK's
-optimized ROM float routines. `mpx-cli info` prints `renderAvgUs`,
-`renderMaxUs` and `frameBudgetUs`, so you can measure how much headroom a
-preset leaves.
+optimized ROM float routines. To make up for it the build:
+
+- runs the RP2040 at 200 MHz, its fastest officially supported clock (the SDK
+  raises the core voltage to 1.15 V for it; the default is 125 MHz),
+- runs the per-pixel code (emitter drawing, layer blending, output stage) and
+  the float routines from RAM, so core 0's USB code can't evict them from the
+  16 KB flash cache.
+
+The engine itself only touches the LEDs a layer's voices lit (except for the
+`multiply`, `darken` and `mask` blend modes, which affect the whole strip), so
+narrow beams on a long strip are cheap and full-strip washes cost the most.
+`mpx-cli info` prints `renderAvgUs`, `renderMaxUs` and `frameBudgetUs`, so you
+can measure how much headroom a preset leaves.

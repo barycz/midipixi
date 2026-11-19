@@ -493,6 +493,123 @@ TEST_CASE("engine: moving emitter is anti-aliased between LEDs") {
     CHECK(lum(e.pixels()[3]) == 0.0f);
 }
 
+namespace {
+Layer droneLayer(float position, float width) {
+    Layer l;
+    l.trigger = TriggerMode::Drone;
+    l.emitter = EmitterParams{position, width, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};  // white
+    l.env[0] = EnvParams{0, 0, 1, 0};
+    return l;
+}
+} // namespace
+
+TEST_CASE("engine: narrow layers blend where lit, masks cover the whole strip") {
+    Preset p;
+    p.addLayer(droneLayer(0.5f, 1.0f));  // white wash
+    Layer mask = droneLayer(0.0f, 0.0f);  // keeps LED 0 only
+    mask.blend = BlendMode::Mask;
+    p.addLayer(mask);
+    Layer spark = droneLayer(1.0f, 0.0f);  // red dot on LED 9
+    spark.emitter.saturation = 1.0f;
+    p.addLayer(spark);
+    Engine e;
+    e.setPixelCount(10);
+    e.setPreset(p);
+    e.advance(0.01f);
+    e.render();
+    CHECK_NEAR(lum(e.pixels()[0]), 1.0, 1e-4);
+    CHECK(lum(e.pixels()[5]) == 0.0f);
+    CHECK_NEAR(e.pixels()[9].r, 1.0, 1e-4);
+    CHECK(e.pixels()[9].g == 0.0f);
+
+    // Move the spark: nothing of it may stay behind in the layer buffer (the
+    // mask below would otherwise let the wash through on LED 9).
+    p.layers[2].emitter.position = 5.0f / 9.0f;
+    e.setPreset(p, true);
+    e.advance(0.01f);
+    e.render();
+    CHECK(lum(e.pixels()[9]) == 0.0f);
+    CHECK_NEAR(e.pixels()[5].r, 1.0, 1e-4);
+}
+
+TEST_CASE("engine: wrapped emitter lights both strip ends") {
+    Preset p;
+    Layer l = droneLayer(0.0f, 0.2f);  // LED 0 and one either side
+    l.wrap = true;
+    p.addLayer(l);
+    Engine e;
+    e.setPixelCount(10);
+    e.setPreset(p);
+    e.advance(0.01f);
+    e.render();
+    CHECK_NEAR(lum(e.pixels()[9]), 1.0, 1e-4);
+    CHECK_NEAR(lum(e.pixels()[0]), 1.0, 1e-4);
+    CHECK_NEAR(lum(e.pixels()[1]), 1.0, 1e-4);
+    CHECK(lum(e.pixels()[2]) == 0.0f);
+    CHECK(lum(e.pixels()[8]) == 0.0f);
+}
+
+TEST_CASE("engine: layer-wide and per-voice mod rows add up") {
+    Preset p;
+    Layer l;
+    l.emitter = EmitterParams{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+    l.env[0] = EnvParams{0, 0, 1, 0};
+    l.addMod(ModSource{SourceType::Macro, 0}, Dest::Position, 0.5f);  // same for every voice
+    l.addMod(ModSource{SourceType::Velocity, 0}, Dest::Position, 0.5f);
+    p.addLayer(l);
+    Engine e;
+    e.setPixelCount(11);
+    e.setPreset(p);
+    e.setMacro(0, 1.0f);
+    e.advance(0.5f);
+    e.noteOn(0, 60, 127);  // position 1 -> LED 10
+    e.noteOn(0, 62, 1);    // position ~0.5 -> LED 5
+    e.advance(0.01f);
+    e.render();
+    CHECK(e.activeVoices(0) == 2);
+    CHECK_NEAR(lum(e.pixels()[10]), 1.0, 1e-4);
+    CHECK(lum(e.pixels()[5]) > 0.9f);
+    CHECK(lum(e.pixels()[0]) == 0.0f);
+    CHECK_NEAR(livePos(e), 0.5f + 0.5f / 127.0f, 1e-4);  // newest voice
+}
+
+TEST_CASE("engine: smoothed CC settles exactly on its target") {
+    Preset p;
+    Layer l = droneLayer(0.5f, 1.0f);
+    l.emitter.brightness = 0.0f;
+    l.addMod(ModSource{SourceType::CC, 74}, Dest::Brightness, 1.0f);
+    p.addLayer(l);
+    Engine e;
+    e.setPixelCount(10);
+    e.setPreset(p);
+    e.controlChange(0, 74, 127);
+    run(e, 1.0f);
+    CHECK(lum(e.pixels()[3]) == 1.0f);
+    e.controlChange(0, 74, 0);
+    run(e, 1.0f);
+    CHECK(litCount(e, 0.0f) == 0);
+}
+
+TEST_CASE("engine: an LFO a live edit starts reading drives its row at once") {
+    Preset p;
+    Layer l = droneLayer(0.5f, 1.0f);
+    l.emitter.brightness = 0.0f;
+    l.lfo[0].shape = LfoShape::Square;  // phase 0: high
+    l.lfo[0].rate = 0.0f;
+    l.lfo[0].bipolar = false;
+    p.addLayer(l);
+    Engine e;
+    e.setPixelCount(10);
+    e.setPreset(p);
+    e.advance(0.01f);
+    e.render();
+    CHECK(litCount(e) == 0);
+    p.layers[0].addMod(ModSource{SourceType::Lfo1, 0}, Dest::Brightness, 1.0f);
+    e.setPreset(p, true);
+    e.render();  // no advance() in between
+    CHECK_NEAR(lum(e.pixels()[3]), 1.0, 1e-4);
+}
+
 TEST_CASE("engine: live preset update keeps playing voices") {
     auto e = engineWith("note-visualisation.json");
     e->noteOn(0, 60, 100);

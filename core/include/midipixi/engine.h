@@ -113,6 +113,20 @@ private:
         float current = 0.0f;
     };
 
+    // Per-layer data derived from the preset once in setPreset(), so render()
+    // does not re-derive it every frame.
+    struct LayerPlan {
+        // Valid mod rows split by scope: rows that read no voice source give the
+        // same result for every voice and are evaluated once per layer and frame.
+        uint8_t layerRows[kMaxModRows] = {};
+        uint8_t voiceRows[kMaxModRows] = {};
+        uint8_t layerRowCount = 0;
+        uint8_t voiceRowCount = 0;
+        bool lfoUsed[kNumLfos] = {};  // read by a mod row (else its waveform is not computed)
+    };
+
+    void buildPlan(int i);
+    void refreshLfoValues(int i);
     void resetLayer(int i);
     void ensureDrone(int i);
     bool acceptsNote(const Layer& l, int channel, int note) const;
@@ -125,22 +139,27 @@ private:
 
     float baseLfoRate(const LfoParams& p) const;
     float sourceValue(const Layer& l, const LayerState& ls, const Voice* v, ModSource s) const;
-    void evalMods(const Layer& l, const LayerState& ls, const Voice* v, float* sum) const;
+    // Adds the given rows of the layer's matrix to sum (not cleared first).
+    void addMods(const Layer& l, const LayerState& ls, const Voice* v, const uint8_t* rows, int count,
+                 float* sum) const;
     void advanceEnv(EnvState& st, const EnvParams& p, float dt) const;
-    void advanceLfo(LfoState& st, const LfoParams& p, float rate, float dt, bool lockToBeat);
+    void advanceLfo(LfoState& st, const LfoParams& p, float rate, float dt, bool lockToBeat, bool used);
     float lfoOutput(LfoState& st, const LfoParams& p) const;
 
-    void drawEmitter(Rgb* buf, float pos, float width, float soft, float hue, float sat, float bri, float spread,
-                     bool wrap) const;
+    // Adds an emitter to layerBuf_ and widens the dirty range.
+    void drawEmitter(float pos, float width, float soft, float hue, float sat, float bri, float spread, bool wrap);
+    // Composites layerBuf_ onto out_, then clears its dirty range.
     void blendLayer(BlendMode mode, float opacity);
 
     float randomUnit();  // 0..1
 
     Preset preset_;
+    LayerPlan plans_[kMaxLayers];
     LayerState layers_[kMaxLayers];
     int pixelCount_ = 60;
 
     Smoothed cc_[128];
+    uint32_t ccMoving_[4] = {};  // bit per CC whose smoothed value has not reached its target
     Smoothed pitchBend_;
     Smoothed pressure_;
     Smoothed macros_[kNumMacros];
@@ -159,10 +178,16 @@ private:
     uint32_t serial_ = 0;
     uint32_t rng_ = 0x12345678u;
 
+    float beatPhase_ = 0.0f;  // fract(beats_), taken once per render()
+
     float live_[kMaxLayers][kNumDests] = {};
     bool liveValid_[kMaxLayers] = {};
 
+    // layerBuf_ is all zero outside [dirtyLo_, dirtyHi_] (empty when lo > hi):
+    // blending and clearing only visit the LEDs the layer's voices touched.
     Rgb layerBuf_[kMaxPixels];
+    int dirtyLo_ = kMaxPixels;
+    int dirtyHi_ = -1;
     Rgb out_[kMaxPixels];
 };
 

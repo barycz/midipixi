@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "midipixi/hot.h"
+
 namespace mpx {
 
 namespace {
@@ -75,14 +77,16 @@ void OutputStage::resetDither() {
     }
 }
 
-uint32_t OutputStage::linear(float v) const {
+// One float multiply and conversion; the curve is interpolated in fixed point
+// (8-bit fraction), which is cheap without an FPU.
+MPX_HOT uint32_t OutputStage::linear(float v) const {
     if (!(v > 0.0f)) return 0;
     if (v >= 1.0f) return lut_[kLutSize];
-    float f = v * kLutSize;
-    int i = static_cast<int>(f);
-    float t = f - static_cast<float>(i);
-    float a = lut_[i], b = lut_[i + 1];
-    return static_cast<uint32_t>(a + (b - a) * t);
+    uint32_t f = static_cast<uint32_t>(v * static_cast<float>(kLutSize * 256));
+    uint32_t i = f >> 8;
+    uint32_t t = f & 0xFFu;
+    uint32_t a = lut_[i], b = lut_[i + 1];  // the curve rises: b >= a
+    return a + (((b - a) * t) >> 8);
 }
 
 void OutputStage::process(const Rgb* in, int count, uint8_t* out) {
@@ -90,17 +94,28 @@ void OutputStage::process(const Rgb* in, int count, uint8_t* out) {
     emit(out);
 }
 
-void OutputStage::prepare(const Rgb* in, int count) {
+MPX_HOT void OutputStage::prepare(const Rgb* in, int count) {
     if (count < 0) count = 0;
     if (count > kMaxPixels) count = kMaxPixels;
     count_ = count;
 
+    // Pass 1: gamma curve into level_ (output order), summed for the current
+    // estimate. The gear reports the estimate in its stats, so it always runs.
+    const uint8_t* idx = kOrderIndex[static_cast<int>(cfg_.colorOrder)];
+    uint32_t sum = 0;  // at most kMaxPixels * 3 * 65535 < 2^32
+    for (int i = 0; i < count; ++i) {
+        const Rgb& px = in[cfg_.reverse ? count - 1 - i : i];
+        uint32_t r = linear(px.r), g = linear(px.g), b = linear(px.b);
+        uint16_t* lv = level_ + i * 3;
+        lv[idx[0]] = static_cast<uint16_t>(r);
+        lv[idx[1]] = static_cast<uint16_t>(g);
+        lv[idx[2]] = static_cast<uint16_t>(b);
+        sum += r + g + b;
+    }
+
     // Master brightness and the power limiter both scale linear light.
     float scale = cfg_.brightness;
     float idle = cfg_.idleMaPerLed * static_cast<float>(count);
-    // Current estimate is always computed: the gear reports it in its stats.
-    uint64_t sum = 0;
-    for (int i = 0; i < count; ++i) sum += linear(in[i].r) + linear(in[i].g) + linear(in[i].b);
     float activeMa = static_cast<float>(sum) / 65535.0f * cfg_.maPerChannel * scale;
     float limiter = 1.0f;
     if (cfg_.powerLimitMa > 0) {
@@ -112,24 +127,22 @@ void OutputStage::prepare(const Rgb* in, int count) {
     lastCurrentMa_ = idle + activeMa * limiter;
     scale *= limiter;
 
-    uint32_t fixedScale = static_cast<uint32_t>(clamp01(scale) * 65536.0f);
-    // Dithered levels are rounded to multiples of 1/ditherLevels of an 8-bit step.
+    // Pass 2, integer only: scale, then round dithered levels to multiples of
+    // 1/ditherLevels of an 8-bit step.
+    const uint32_t fixedScale = static_cast<uint32_t>(clamp01(scale) * 65536.0f);
     const uint32_t quantum = cfg_.dither ? 256u / cfg_.ditherLevels : 1u;
     const uint32_t mask = ~(quantum - 1u);
-    const uint8_t* idx = kOrderIndex[static_cast<int>(cfg_.colorOrder)];
-    for (int i = 0; i < count; ++i) {
-        int src = cfg_.reverse ? count - 1 - i : i;
-        uint32_t ch[3] = {linear(in[src].r), linear(in[src].g), linear(in[src].b)};
-        uint16_t* lv = level_ + i * 3;
-        for (int c = 0; c < 3; ++c) {
-            uint32_t v = static_cast<uint32_t>((static_cast<uint64_t>(ch[c]) * fixedScale) >> 16);
-            v = (v + quantum / 2u) & mask;
-            lv[idx[c]] = static_cast<uint16_t>(v > 65535 ? (65535u & mask) : v);
-        }
+    const uint32_t top = 65535u & mask;
+    const int n = count * 3;
+    for (int i = 0; i < n; ++i) {
+        // 65535 * 65536 < 2^32: no 64-bit multiply (a library call on Cortex-M0+).
+        uint32_t v = (static_cast<uint32_t>(level_[i]) * fixedScale) >> 16;
+        v = (v + quantum / 2u) & mask;
+        level_[i] = static_cast<uint16_t>(v > 65535u ? top : v);
     }
 }
 
-void OutputStage::emit(uint8_t* out) {
+MPX_HOT void OutputStage::emit(uint8_t* out) {
     const int n = count_ * 3;
     if (cfg_.dither) {
         for (int i = 0; i < n; ++i) {

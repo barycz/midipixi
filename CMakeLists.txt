@@ -28,6 +28,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MIDIPIXI_GEAR)
+    # Fastest officially supported clock: RP2040 200 MHz instead of 125 (the SDK
+    # raises the core voltage to match), RP2350 stays at 150 MHz.
+    if(NOT DEFINED PICO_USE_FASTEST_SUPPORTED_CLOCK)
+        set(PICO_USE_FASTEST_SUPPORTED_CLOCK ON)
+    endif()
     pico_sdk_init()
     add_subdirectory(core)
     add_subdirectory(gear)
