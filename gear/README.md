@@ -43,7 +43,7 @@ program is assembled at runtime, and the UF2 is made by `scripts/bin2uf2.py`.
 ```bat
 mpx-cli info                         :: device, LED config, render statistics
 mpx-cli config ledCount=60           :: your strip length
-mpx-cli list                         :: factory presets in slots 0-6
+mpx-cli list                         :: factory presets in slots 0-8
 mpx-cli upload 6 mypreset.json --select
 ```
 

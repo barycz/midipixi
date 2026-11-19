@@ -22,4 +22,6 @@ set(MPX_FACTORY_PRESETS
     rainbow-chase
     live-set
     stargate
+    fireflies
+    aurora
 )

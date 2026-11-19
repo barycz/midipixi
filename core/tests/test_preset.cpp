@@ -104,7 +104,7 @@ TEST_CASE("preset: missing fields use defaults, bad names are errors") {
 TEST_CASE("preset: all factory presets load and round trip") {
     const char* files[] = {"note-visualisation.json", "laser.json",         "strobe.json",
                            "ambience.json",           "rainbow-chase.json", "live-set.json",
-                           "stargate.json"};
+                           "stargate.json",           "fireflies.json",     "aurora.json"};
     for (const char* f : files) {
         std::string text = readFile(presetPath(f));
         REQUIRE(!text.empty());

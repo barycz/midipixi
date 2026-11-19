@@ -1,0 +1,144 @@
+{
+  "format": "midipixi/1",
+  "name": "Fireflies",
+  "author": "midipixi",
+  "macros": [ {"name": "Size", "value": 0, "cc": 20} ],
+  "layers": [
+    {
+      "name": "Firefly 1",
+      "trigger": "drone",
+      "blend": "add",
+      "emitter": {"position": 0.0625, "width": 0, "softness": 0.3, "hue": 0, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.2, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 2",
+      "trigger": "drone",
+      "blend": "screen",
+      "emitter": {"position": 0.1875, "width": 0, "softness": 0.3, "hue": 0.125, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.25, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 3",
+      "trigger": "drone",
+      "blend": "lighten",
+      "emitter": {"position": 0.3125, "width": 0, "softness": 0.3, "hue": 0.25, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.3, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 4",
+      "trigger": "drone",
+      "blend": "add",
+      "emitter": {"position": 0.4375, "width": 0, "softness": 0.3, "hue": 0.375, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.35, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 5",
+      "trigger": "drone",
+      "blend": "difference",
+      "emitter": {"position": 0.5625, "width": 0, "softness": 0.3, "hue": 0.5, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.4, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 6",
+      "trigger": "drone",
+      "blend": "normal",
+      "emitter": {"position": 0.6875, "width": 0, "softness": 0.3, "hue": 0.625, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.45, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 7",
+      "trigger": "drone",
+      "blend": "add",
+      "emitter": {"position": 0.8125, "width": 0, "softness": 0.3, "hue": 0.75, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.5, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    },
+    {
+      "name": "Firefly 8",
+      "trigger": "drone",
+      "blend": "hueshift",
+      "emitter": {"position": 0.9375, "width": 0, "softness": 0.3, "hue": 0.875, "saturation": 0.9, "brightness": 0.8, "hueSpread": 0},
+      "envs": [ {"attack": 0, "decay": 0, "sustain": 1, "release": 0.2} ],
+      "lfos": [
+        {"shape": "sine", "rate": 0.55, "bipolar": true},
+        {"shape": "triangle", "rate": 0.5, "bipolar": true}
+      ],
+      "mods": [
+        {"source": "lfo1", "dest": "position", "amount": 0.05},
+        {"source": "lfo2", "dest": "hue", "amount": 0.1},
+        {"source": "env1", "dest": "brightness", "amount": 0.1},
+        {"source": "macro1", "dest": "width", "amount": 0.1}
+      ]
+    }
+  ]
+}

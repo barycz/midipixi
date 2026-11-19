@@ -56,4 +56,4 @@ Limits: request lines up to 32 KB (20 KB on Pico 1), stored presets up to
 
 The last 516 KB of flash hold 32 slots of 16 KB plus one 4 KB settings sector.
 Each record has a magic number, a length and a CRC32. On first boot, the
-factory presets from `presets/` are written to slots 0–6.
+factory presets from `presets/` are written to slots 0–8.
