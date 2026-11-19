@@ -24,7 +24,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design,
 
 ## Building (Windows)
 
-Requirements: Visual Studio 2022 with C++ tools, CMake ≥ 3.22, Ninja, git.
+Requirements: Visual Studio 2022 or 2026 with the C++ desktop tools, CMake ≥ 3.22, Ninja, git.
 For the gear firmware: [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 (arm-none-eabi) and [pico-sdk 2.x](https://github.com/raspberrypi/pico-sdk)
 with the `lib/tinyusb` submodule. Put them in `.tools/arm-gnu-toolchain` and
@@ -37,6 +37,12 @@ scripts\dev.cmd cmake --preset desktop
 scripts\dev.cmd cmake --build --preset desktop
 scripts\dev.cmd ctest --preset desktop
 ```
+
+With several Visual Studio versions installed, `dev.cmd` uses the one (and the
+MSVC toolset) a build folder was configured with, and the newest one for a new
+or `--fresh` configure. Set `MPX_VS` to a major version (`17` = 2022,
+`18` = 2026) or an installation folder to choose. To move a build folder to
+another version, configure it again: `scripts\dev.cmd cmake --preset desktop --fresh`.
 
 | Preset | Builds |
 |---|---|
